@@ -7,6 +7,9 @@ Una aplicación de escritorio de chat estilo ChatGPT desarrollada en Python util
 - 🔐 **Sistema de autenticación** completo con registro y login
 - 👤 **Usuarios individuales** con conversaciones privadas
 - 🔒 **Seguridad robusta** con contraseñas hasheadas (SHA-256 + salt)
+- 💬 **Gestión de conversaciones** - sidebar con lista de chats, renombrar, eliminar
+- 🔄 **Navegación fluida** entre conversaciones con preview de mensajes
+- 📱 **Interfaz adaptable** - sidebar colapsable para más espacio
 - 🖥️ **Interfaz moderna** con Flet (basado en Flutter)
 - 🧠 **Integración con OpenAI** GPT-4o-mini a través de LangChain
 - 💾 **Persistencia local** con SQLite y SQLAlchemy
@@ -99,19 +102,41 @@ asistente-pmp/
 
 ### Usando el Chat
 1. **Login**: Inicia sesión con tu usuario y contraseña
-2. **Escribir mensajes**: Usa el campo de texto en la parte inferior
-3. **Enviar**: Presiona Enter o haz clic en el botón de enviar
-4. **Nueva conversación**: Usa el botón "+" en la barra superior
+2. **Gestión de conversaciones**:
+   - **Ver conversaciones**: Sidebar izquierdo con lista de chats
+   - **Alternar sidebar**: Botón de menú (☰) para mostrar/ocultar
+   - **Nueva conversación**: Botón "+" en barra superior o sidebar
+   - **Cambiar conversación**: Clic en cualquier chat del sidebar
+   - **Renombrar**: Menú contextual (⋮) → "Renombrar"
+   - **Eliminar**: Menú contextual (⋮) → "Eliminar"
+3. **Escribir mensajes**: Usa el campo de texto en la parte inferior
+4. **Enviar**: Presiona Enter o haz clic en el botón de enviar
 5. **Cerrar sesión**: Usa el botón de logout en la barra superior
 6. **Historial privado**: Tus mensajes se guardan y solo tú puedes verlos
 
 ## 🎨 Características de la Interfaz
 
+### Área Principal de Chat
 - **Mensajes del usuario**: Aparecen alineados a la derecha en azul
 - **Respuestas de la IA**: Aparecen alineadas a la izquierda en gris
 - **Indicador de escritura**: Muestra cuando la IA está procesando
 - **Scroll automático**: Se desplaza automáticamente a los mensajes nuevos
 - **Texto seleccionable**: Puedes copiar cualquier mensaje
+
+### Sidebar de Conversaciones
+- **Lista de chats**: Todas tus conversaciones organizadas
+- **Preview de mensajes**: Vista previa del último mensaje
+- **Conversación activa**: Resaltada en azul
+- **Menú contextual**: Opciones de renombrar y eliminar
+- **Colapsable**: Ocultar/mostrar para más espacio
+- **Scroll independiente**: Navega por muchas conversaciones
+
+### Controles
+- **Botón de menú (☰)**: Alternar sidebar
+- **Botón "+" (múltiples ubicaciones)**: Nueva conversación
+- **Campo de texto**: Entrada de mensajes con soporte multilínea
+- **Botón de envío**: Enviar mensaje o usar Enter
+- **Botón de logout**: Cerrar sesión segura
 
 ## 📦 Empaquetado con PyInstaller
 
