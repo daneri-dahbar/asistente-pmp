@@ -59,11 +59,24 @@ class ChatUI:
         self.user = user
         self.chatbot = None
         self.on_logout_callback = None  # Callback para logout
+        self.current_session = None
+        self.sessions_list = []
+        
+        # Contenedores principales
         self.chat_container = ft.Column(
             scroll=ft.ScrollMode.AUTO,
             auto_scroll=True,
             spacing=5
         )
+        
+        # Lista de conversaciones (sidebar)
+        self.conversations_list = ft.Column(
+            scroll=ft.ScrollMode.AUTO,
+            spacing=5,
+            width=250
+        )
+        
+        # Campo de entrada de mensajes
         self.message_input = ft.TextField(
             hint_text="Escribe tu mensaje aquí...",
             multiline=True,
@@ -74,6 +87,8 @@ class ChatUI:
             content_padding=ft.padding.symmetric(15, 10),
             on_submit=self.send_message
         )
+        
+        # Botón de envío
         self.send_button = ft.IconButton(
             icon=ft.Icons.SEND,
             tooltip="Enviar mensaje",
@@ -84,6 +99,8 @@ class ChatUI:
                 shape=ft.CircleBorder()
             )
         )
+        
+        # Texto de estado
         self.status_text = ft.Text(
             "Inicializando...",
             size=12,
@@ -93,6 +110,7 @@ class ChatUI:
         # Estado de la aplicación
         self.is_sending = False
         self.page = None
+        self.sidebar_visible = True
     
     def initialize_chatbot(self, page: ft.Page):
         """
@@ -106,6 +124,9 @@ class ChatUI:
                 if self.chatbot.is_api_key_valid():
                     self.status_text.value = f"✅ Conectado como {self.user.username} - Listo para chatear"
                     self.status_text.color = ft.Colors.GREEN_600
+                    
+                    # Establecer sesión actual
+                    self.current_session = self.chatbot.current_session
                     
                     # Cargar historial existente
                     self.load_conversation_history()
@@ -128,11 +149,242 @@ class ChatUI:
         if not self.chatbot:
             return
         
+        # Cargar lista de conversaciones
+        self.load_conversations_list()
+        
+        # Cargar historial de la conversación actual
         history = self.chatbot.get_conversation_history()
+        self.chat_container.controls.clear()
         for role, content in history:
             is_user = role == "user"
             message_widget = create_chat_message(content, is_user)
             self.chat_container.controls.append(message_widget)
+    
+    def load_conversations_list(self):
+        """
+        Carga la lista de conversaciones del usuario en el sidebar.
+        """
+        if not self.chatbot:
+            return
+        
+        try:
+            # Obtener sesiones del usuario
+            self.sessions_list = self.chatbot.db_manager.get_user_sessions(self.user.id)
+            self.conversations_list.controls.clear()
+            
+            # Agregar cada conversación a la lista
+            for session in self.sessions_list:
+                conversation_item = self.create_conversation_item(session)
+                self.conversations_list.controls.append(conversation_item)
+            
+            if self.page:
+                self.page.update()
+                
+        except Exception as e:
+            print(f"Error al cargar conversaciones: {e}")
+    
+    def create_conversation_item(self, session):
+        """
+        Crea un elemento de conversación para el sidebar.
+        """
+        is_current = self.current_session and session.id == self.current_session.id
+        
+        # Obtener preview del último mensaje
+        try:
+            messages = self.chatbot.db_manager.get_session_messages(session.id)
+            if messages:
+                last_message = messages[-1][1]  # content del último mensaje
+                preview = last_message[:50] + "..." if len(last_message) > 50 else last_message
+            else:
+                preview = "Nueva conversación"
+        except:
+            preview = "Nueva conversación"
+        
+        # Contenedor de la conversación
+        conversation_container = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.Text(
+                                session.name,
+                                size=14,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.WHITE if is_current else ft.Colors.BLACK87,
+                                expand=True
+                            ),
+                            ft.PopupMenuButton(
+                                icon=ft.Icons.MORE_VERT,
+                                icon_color=ft.Colors.WHITE if is_current else ft.Colors.GREY_600,
+                                icon_size=16,
+                                items=[
+                                    ft.PopupMenuItem(
+                                        text="Renombrar",
+                                        icon=ft.Icons.EDIT,
+                                        on_click=lambda e, s=session: self.rename_conversation(s)
+                                    ),
+                                    ft.PopupMenuItem(
+                                        text="Eliminar",
+                                        icon=ft.Icons.DELETE,
+                                        on_click=lambda e, s=session: self.delete_conversation(s)
+                                    )
+                                ]
+                            )
+                        ]
+                    ),
+                    ft.Text(
+                        preview,
+                        size=11,
+                        color=ft.Colors.WHITE70 if is_current else ft.Colors.GREY_600,
+                        overflow=ft.TextOverflow.ELLIPSIS
+                    )
+                ],
+                spacing=2
+            ),
+            padding=ft.padding.all(10),
+            margin=ft.margin.symmetric(0, 2),
+            bgcolor=ft.Colors.BLUE_600 if is_current else ft.Colors.TRANSPARENT,
+            border_radius=8,
+            on_click=lambda e, s=session: self.switch_conversation(s),
+            ink=True
+        )
+        
+        return conversation_container
+    
+    def switch_conversation(self, session):
+        """
+        Cambia a una conversación diferente.
+        """
+        if self.is_sending:
+            return
+        
+        try:
+            self.current_session = session
+            self.chatbot.current_session = session
+            self.chatbot._load_conversation_history()
+            
+            # Recargar la interfaz
+            self.load_conversation_history()
+            
+            if self.page:
+                self.page.update()
+                
+        except Exception as e:
+            print(f"Error al cambiar conversación: {e}")
+    
+    def rename_conversation(self, session):
+        """
+        Renombra una conversación.
+        """
+        def on_rename(e):
+            new_name = name_field.value.strip()
+            if new_name and new_name != session.name:
+                try:
+                    # Actualizar en base de datos
+                    with self.chatbot.db_manager.get_session() as db:
+                        from db.models import ChatSession
+                        
+                        db_session = db.query(ChatSession).filter(
+                            ChatSession.id == session.id
+                        ).first()
+                        if db_session:
+                            db_session.name = new_name
+                            db.commit()
+                    
+                    # Actualizar en memoria
+                    session.name = new_name
+                    
+                    # Recargar lista
+                    self.load_conversations_list()
+                    
+                    # Cerrar diálogo
+                    dialog.open = False
+                    self.page.update()
+                    
+                except Exception as error:
+                    print(f"Error al renombrar: {error}")
+        
+        def on_cancel(e):
+            dialog.open = False
+            self.page.update()
+        
+        name_field = ft.TextField(
+            value=session.name,
+            label="Nombre de la conversación",
+            width=300,
+            on_submit=on_rename
+        )
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text("Renombrar Conversación"),
+            content=name_field,
+            actions=[
+                ft.TextButton("Cancelar", on_click=on_cancel),
+                ft.ElevatedButton("Guardar", on_click=on_rename)
+            ]
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+        name_field.focus()
+    
+    def delete_conversation(self, session):
+        """
+        Elimina una conversación.
+        """
+        def on_confirm(e):
+            try:
+                # Eliminar de base de datos
+                with self.chatbot.db_manager.get_session() as db:
+                    from db.models import ChatMessage, ChatSession
+                    
+                    # Eliminar mensajes
+                    db.query(ChatMessage).filter(
+                        ChatMessage.session_id == session.id
+                    ).delete()
+                    
+                    # Eliminar sesión
+                    db.query(ChatSession).filter(
+                        ChatSession.id == session.id
+                    ).delete()
+                    
+                    db.commit()
+                
+                # Si era la conversación actual, crear una nueva
+                if self.current_session and self.current_session.id == session.id:
+                    self.new_conversation(None)
+                else:
+                    # Solo recargar la lista
+                    self.load_conversations_list()
+                
+                # Cerrar diálogo
+                dialog.open = False
+                self.page.update()
+                
+            except Exception as error:
+                print(f"Error al eliminar conversación: {error}")
+        
+        def on_cancel(e):
+            dialog.open = False
+            self.page.update()
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text("Eliminar Conversación"),
+            content=ft.Text(f"¿Estás seguro de que quieres eliminar '{session.name}'?\n\nEsta acción no se puede deshacer."),
+            actions=[
+                ft.TextButton("Cancelar", on_click=on_cancel),
+                ft.ElevatedButton(
+                    "Eliminar", 
+                    on_click=on_confirm,
+                    style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE)
+                )
+            ]
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
     
     def send_message(self, e=None):
         """
@@ -173,6 +425,9 @@ class ChatUI:
                 # Mostrar respuesta de la IA
                 ai_message_widget = create_chat_message(response, False)
                 self.chat_container.controls.append(ai_message_widget)
+                
+                # Actualizar lista de conversaciones (para mostrar el nuevo mensaje)
+                self.load_conversations_list()
                 
             except Exception as error:
                 # Remover indicador de escritura
@@ -236,31 +491,44 @@ class ChatUI:
         """
         if self.chatbot:
             self.chatbot.start_new_conversation()
+            self.current_session = self.chatbot.current_session
             self.chat_container.controls.clear()
-            e.page.update()
+            
+            # Recargar lista de conversaciones
+            self.load_conversations_list()
+            
+            if self.page:
+                self.page.update()
     
-    def logout(self, e):
+    def toggle_sidebar(self, e):
         """
-        Cierra la sesión del usuario actual y regresa a la pantalla de login.
+        Alterna la visibilidad del sidebar de conversaciones.
         """
-        if self.on_logout_callback:
-            self.on_logout_callback()
-    
-    def build_ui(self, page: ft.Page):
-        """
-        Construye la interfaz de usuario principal.
-        """
-        self.page = page
+        self.sidebar_visible = not self.sidebar_visible
+        
+        # Reconstruir la interfaz completa
+        self.page.controls.clear()
         
         # Barra superior
         header = ft.Container(
             content=ft.Row(
                 controls=[
-                    ft.Text(
-                        "🤖 ChatGPT Assistant",
-                        size=18,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.WHITE
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.Icons.MENU,
+                                tooltip="Alternar conversaciones",
+                                icon_color=ft.Colors.WHITE,
+                                on_click=self.toggle_sidebar
+                            ),
+                            ft.Text(
+                                "🤖 ChatGPT Assistant",
+                                size=18,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.WHITE
+                            )
+                        ],
+                        spacing=10
                     ),
                     ft.Row(
                         controls=[
@@ -297,7 +565,27 @@ class ChatUI:
             )
         )
         
-        # Área de chat
+        # Construir layout principal
+        content = self.build_layout()
+        
+        # Layout principal
+        main_layout = ft.Column(
+            controls=[
+                header,
+                content
+            ],
+            spacing=0,
+            expand=True
+        )
+        
+        self.page.add(main_layout)
+        self.page.update()
+    
+    def build_layout(self):
+        """
+        Construye el layout principal con o sin sidebar.
+        """
+        # Área de chat principal
         chat_area = ft.Container(
             content=self.chat_container,
             padding=ft.padding.all(20),
@@ -333,12 +621,149 @@ class ChatUI:
             bgcolor=ft.Colors.GREY_50
         )
         
+        # Área principal de chat
+        main_chat_area = ft.Column(
+            controls=[
+                chat_area,
+                input_area
+            ],
+            spacing=0,
+            expand=True
+        )
+        
+        if self.sidebar_visible:
+            # Layout con sidebar
+            content = ft.Row(
+                controls=[
+                    # Sidebar de conversaciones
+                    ft.Container(
+                        content=ft.Column(
+                            controls=[
+                                # Header del sidebar
+                                ft.Container(
+                                    content=ft.Row(
+                                        controls=[
+                                            ft.Text(
+                                                "Conversaciones",
+                                                size=16,
+                                                weight=ft.FontWeight.BOLD,
+                                                color=ft.Colors.WHITE
+                                            ),
+                                            ft.IconButton(
+                                                icon=ft.Icons.ADD,
+                                                tooltip="Nueva conversación",
+                                                icon_color=ft.Colors.WHITE,
+                                                icon_size=20,
+                                                on_click=self.new_conversation
+                                            )
+                                        ],
+                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                                    ),
+                                    padding=ft.padding.all(15),
+                                    bgcolor=ft.Colors.BLUE_700
+                                ),
+                                # Lista de conversaciones
+                                ft.Container(
+                                    content=self.conversations_list,
+                                    padding=ft.padding.all(10),
+                                    expand=True
+                                )
+                            ],
+                            spacing=0
+                        ),
+                        width=280,
+                        bgcolor=ft.Colors.GREY_50,
+                        border=ft.border.only(right=ft.BorderSide(1, ft.Colors.GREY_300))
+                    ),
+                    # Área principal de chat
+                    main_chat_area
+                ],
+                spacing=0,
+                expand=True
+            )
+        else:
+            # Layout sin sidebar
+            content = main_chat_area
+        
+        return content
+    
+    def logout(self, e):
+        """
+        Cierra la sesión del usuario actual y regresa a la pantalla de login.
+        """
+        if self.on_logout_callback:
+            self.on_logout_callback()
+    
+    def build_ui(self, page: ft.Page):
+        """
+        Construye la interfaz de usuario principal.
+        """
+        self.page = page
+        
+        # Barra superior
+        header = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.Icons.MENU,
+                                tooltip="Alternar conversaciones",
+                                icon_color=ft.Colors.WHITE,
+                                on_click=self.toggle_sidebar
+                            ),
+                            ft.Text(
+                                "🤖 ChatGPT Assistant",
+                                size=18,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.WHITE
+                            )
+                        ],
+                        spacing=10
+                    ),
+                    ft.Row(
+                        controls=[
+                            ft.Text(
+                                f"👤 {self.user.username}",
+                                size=14,
+                                color=ft.Colors.WHITE70
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.ADD_COMMENT,
+                                tooltip="Nueva conversación",
+                                icon_color=ft.Colors.WHITE,
+                                on_click=self.new_conversation
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.LOGOUT,
+                                tooltip="Cerrar sesión",
+                                icon_color=ft.Colors.WHITE,
+                                on_click=self.logout
+                            )
+                        ],
+                        spacing=5
+                    )
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+            ),
+            bgcolor=ft.Colors.BLUE_700,
+            padding=ft.padding.symmetric(20, 15),
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=4,
+                color=ft.Colors.BLACK26,
+                offset=ft.Offset(0, 2)
+            )
+        )
+        
+        # Construir layout principal
+        content = self.build_layout()
+        
         # Layout principal
         main_layout = ft.Column(
             controls=[
                 header,
-                chat_area,
-                input_area
+                content
             ],
             spacing=0,
             expand=True
