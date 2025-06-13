@@ -187,69 +187,85 @@ class ChatUI:
         """
         Crea un elemento de conversación para el sidebar.
         """
-        is_current = self.current_session and session.id == self.current_session.id
-        
-        # Obtener preview del último mensaje
         try:
-            messages = self.chatbot.db_manager.get_session_messages(session.id)
-            if messages:
-                last_message = messages[-1][1]  # content del último mensaje
-                preview = last_message[:50] + "..." if len(last_message) > 50 else last_message
-            else:
+            is_current = self.current_session and session.id == self.current_session.id
+            
+            # Obtener preview del último mensaje
+            try:
+                messages = self.chatbot.db_manager.get_session_messages(session.id)
+                if messages:
+                    last_message = messages[-1][1]  # content del último mensaje
+                    preview = last_message[:50] + "..." if len(last_message) > 50 else last_message
+                else:
+                    preview = "Nueva conversación"
+            except:
                 preview = "Nueva conversación"
-        except:
-            preview = "Nueva conversación"
         
-        # Contenedor de la conversación
-        conversation_container = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Row(
-                        controls=[
-                            ft.Text(
-                                session.name,
-                                size=14,
-                                weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.WHITE if is_current else ft.Colors.BLACK87,
-                                expand=True
-                            ),
-                            ft.PopupMenuButton(
-                                icon=ft.Icons.MORE_VERT,
-                                icon_color=ft.Colors.WHITE if is_current else ft.Colors.GREY_600,
-                                icon_size=16,
-                                items=[
-                                    ft.PopupMenuItem(
-                                        text="Renombrar",
-                                        icon=ft.Icons.EDIT,
-                                        on_click=lambda e, s=session: self.rename_conversation(s)
-                                    ),
-                                    ft.PopupMenuItem(
-                                        text="Eliminar",
-                                        icon=ft.Icons.DELETE,
-                                        on_click=lambda e, s=session: self.delete_conversation(s)
-                                    )
-                                ]
-                            )
-                        ]
-                    ),
-                    ft.Text(
-                        preview,
-                        size=11,
-                        color=ft.Colors.WHITE70 if is_current else ft.Colors.GREY_600,
-                        overflow=ft.TextOverflow.ELLIPSIS
-                    )
-                ],
-                spacing=2
-            ),
-            padding=ft.padding.all(10),
-            margin=ft.margin.symmetric(0, 2),
-            bgcolor=ft.Colors.BLUE_600 if is_current else ft.Colors.TRANSPARENT,
-            border_radius=8,
-            on_click=lambda e, s=session: self.switch_conversation(s),
-            ink=True
-        )
-        
-        return conversation_container
+            # Contenedor de la conversación
+            conversation_container = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.Row(
+                            controls=[
+                                ft.Text(
+                                    session.name,
+                                    size=14,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=ft.Colors.WHITE if is_current else ft.Colors.BLACK87,
+                                    expand=True
+                                ),
+                                ft.Row(
+                                    controls=[
+                                        ft.IconButton(
+                                            icon=ft.Icons.EDIT,
+                                            icon_size=16,
+                                            icon_color=ft.Colors.WHITE if is_current else ft.Colors.GREY_600,
+                                            tooltip="Renombrar",
+                                            on_click=lambda e, s=session: self.show_rename_dialog(s)
+                                        ),
+                                        ft.IconButton(
+                                            icon=ft.Icons.DELETE,
+                                            icon_size=16,
+                                            icon_color=ft.Colors.WHITE if is_current else ft.Colors.GREY_600,
+                                            tooltip="Eliminar",
+                                            on_click=lambda e, s=session: self.show_delete_dialog(s)
+                                        )
+                                    ],
+                                    spacing=0
+                                )
+                            ]
+                        ),
+                        ft.Text(
+                            preview,
+                            size=11,
+                            color=ft.Colors.WHITE70 if is_current else ft.Colors.GREY_600,
+                            overflow=ft.TextOverflow.ELLIPSIS
+                        )
+                    ],
+                    spacing=2
+                ),
+                padding=ft.padding.all(10),
+                margin=ft.margin.symmetric(0, 2),
+                bgcolor=ft.Colors.BLUE_600 if is_current else ft.Colors.TRANSPARENT,
+                border_radius=8,
+                on_click=lambda e, s=session: self.switch_conversation(s),
+                ink=True
+            )
+            
+            return conversation_container
+            
+        except Exception as e:
+            print(f"Error al crear elemento de conversación: {e}")
+            # Retornar un elemento básico en caso de error
+            return ft.Container(
+                content=ft.Text(
+                    session.name if hasattr(session, 'name') else "Conversación",
+                    size=14
+                ),
+                padding=ft.padding.all(10),
+                margin=ft.margin.symmetric(0, 2),
+                on_click=lambda e, s=session: self.switch_conversation(s)
+            )
     
     def switch_conversation(self, session):
         """
@@ -272,11 +288,63 @@ class ChatUI:
         except Exception as e:
             print(f"Error al cambiar conversación: {e}")
     
-    def rename_conversation(self, session):
+    def create_menu_items(self, session):
         """
-        Renombra una conversación.
+        Crea los elementos del menú contextual para una conversación.
         """
-        def on_rename(e):
+        def on_rename_click(e):
+            print(f"Renombrar clicked para sesión: {session.id}")
+            self.show_rename_dialog(session)
+        
+        def on_delete_click(e):
+            print(f"Eliminar clicked para sesión: {session.id}")
+            self.show_delete_dialog(session)
+        
+        return [
+            ft.PopupMenuItem(
+                text="Renombrar",
+                icon=ft.Icons.EDIT,
+                on_click=on_rename_click
+            ),
+            ft.PopupMenuItem(
+                text="Eliminar",
+                icon=ft.Icons.DELETE,
+                on_click=on_delete_click
+            )
+        ]
+    
+    def create_rename_handler(self, session):
+        """
+        Crea un handler para renombrar una conversación específica.
+        """
+        def handler(e):
+            self.show_rename_dialog(session)
+        return handler
+    
+    def create_delete_handler(self, session):
+        """
+        Crea un handler para eliminar una conversación específica.
+        """
+        def handler(e):
+            self.show_delete_dialog(session)
+        return handler
+    
+    def show_rename_dialog(self, session):
+        """
+        Muestra un diálogo personalizado para renombrar una conversación.
+        """
+        print(f"Mostrando diálogo de renombrar para: {session.name}")
+        
+        # Crear el campo de texto
+        name_field = ft.TextField(
+            value=session.name,
+            label="Nuevo nombre",
+            width=300,
+            autofocus=True
+        )
+        
+        def on_save(e):
+            print(f"Guardando nuevo nombre: {name_field.value}")
             new_name = name_field.value.strip()
             if new_name and new_name != session.name:
                 try:
@@ -290,50 +358,117 @@ class ChatUI:
                         if db_session:
                             db_session.name = new_name
                             db.commit()
+                            print(f"Nombre actualizado en BD: {new_name}")
                     
                     # Actualizar en memoria
                     session.name = new_name
                     
                     # Recargar lista
                     self.load_conversations_list()
-                    
-                    # Cerrar diálogo
-                    dialog.open = False
-                    self.page.update()
+                    print("Lista de conversaciones recargada")
                     
                 except Exception as error:
-                    print(f"Error al renombrar: {error}")
+                    print(f"Error al actualizar nombre: {error}")
+            
+            # Cerrar diálogo personalizado
+            self.close_custom_dialog()
+            print("Diálogo cerrado")
         
         def on_cancel(e):
-            dialog.open = False
-            self.page.update()
+            print("Cancelando renombrar")
+            self.close_custom_dialog()
         
-        name_field = ft.TextField(
-            value=session.name,
-            label="Nombre de la conversación",
-            width=300,
-            on_submit=on_rename
+        # Crear diálogo personalizado usando Container
+        dialog_content = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Text("Renombrar Conversación", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Divider(),
+                    name_field,
+                    ft.Row(
+                        controls=[
+                            ft.TextButton("Cancelar", on_click=on_cancel),
+                            ft.ElevatedButton("Guardar", on_click=on_save)
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
+                        spacing=10
+                    )
+                ],
+                spacing=15,
+                tight=True
+            ),
+            padding=20,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=15,
+                color=ft.Colors.BLACK26,
+                offset=ft.Offset(0, 4)
+            ),
+            width=400
         )
         
-        dialog = ft.AlertDialog(
-            title=ft.Text("Renombrar Conversación"),
-            content=name_field,
-            actions=[
-                ft.TextButton("Cancelar", on_click=on_cancel),
-                ft.ElevatedButton("Guardar", on_click=on_rename)
-            ]
+        # Overlay para el fondo
+        overlay = ft.Container(
+            content=ft.Stack(
+                controls=[
+                    # Fondo semi-transparente
+                    ft.Container(
+                        bgcolor=ft.Colors.BLACK54,
+                        expand=True,
+                        on_click=on_cancel  # Cerrar al hacer clic fuera
+                    ),
+                    # Diálogo centrado
+                    ft.Container(
+                        content=dialog_content,
+                        alignment=ft.alignment.center,
+                        expand=True
+                    )
+                ]
+            ),
+            expand=True
         )
         
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
-        name_field.focus()
+        # Mostrar el diálogo personalizado
+        self.show_custom_dialog(overlay)
+        print("Diálogo personalizado mostrado")
     
-    def delete_conversation(self, session):
+    def show_custom_dialog(self, dialog_overlay):
         """
-        Elimina una conversación.
+        Muestra un diálogo personalizado.
         """
-        def on_confirm(e):
+        # Guardar el contenido actual de la página
+        self.original_page_content = self.page.controls.copy()
+        
+        # Limpiar la página y mostrar el diálogo
+        self.page.controls.clear()
+        self.page.controls.append(dialog_overlay)
+        self.page.update()
+    
+    def close_custom_dialog(self):
+        """
+        Cierra el diálogo personalizado y restaura el contenido original.
+        """
+        if hasattr(self, 'original_page_content'):
+            self.page.controls.clear()
+            self.page.controls.extend(self.original_page_content)
+            self.page.update()
+    
+    def close_dialog(self):
+        """
+        Método auxiliar para cerrar diálogos (mantenido para compatibilidad).
+        """
+        self.close_custom_dialog()
+    
+    def show_delete_dialog(self, session):
+        """
+        Muestra un diálogo personalizado para eliminar una conversación.
+        """
+        print(f"Mostrando diálogo de eliminar para: {session.name}")
+        
+        def on_delete(e):
+            print(f"Eliminando conversación: {session.name}")
             try:
                 # Eliminar de base de datos
                 with self.chatbot.db_manager.get_session() as db:
@@ -350,41 +485,96 @@ class ChatUI:
                     ).delete()
                     
                     db.commit()
+                    print("Conversación eliminada de la BD")
                 
                 # Si era la conversación actual, crear una nueva
                 if self.current_session and self.current_session.id == session.id:
                     self.new_conversation(None)
+                    print("Era la conversación actual, creando nueva")
                 else:
                     # Solo recargar la lista
                     self.load_conversations_list()
-                
-                # Cerrar diálogo
-                dialog.open = False
-                self.page.update()
+                    print("Recargando lista de conversaciones")
                 
             except Exception as error:
                 print(f"Error al eliminar conversación: {error}")
+            
+            # Cerrar diálogo personalizado
+            self.close_custom_dialog()
+            print("Diálogo de eliminar cerrado")
         
         def on_cancel(e):
-            dialog.open = False
-            self.page.update()
+            print("Cancelando eliminación")
+            self.close_custom_dialog()
         
-        dialog = ft.AlertDialog(
-            title=ft.Text("Eliminar Conversación"),
-            content=ft.Text(f"¿Estás seguro de que quieres eliminar '{session.name}'?\n\nEsta acción no se puede deshacer."),
-            actions=[
-                ft.TextButton("Cancelar", on_click=on_cancel),
-                ft.ElevatedButton(
-                    "Eliminar", 
-                    on_click=on_confirm,
-                    style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE)
-                )
-            ]
+        # Crear diálogo personalizado usando Container
+        dialog_content = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Text("Eliminar Conversación", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_600),
+                    ft.Divider(),
+                    ft.Text(
+                        f"¿Estás seguro de que quieres eliminar '{session.name}'?",
+                        size=16
+                    ),
+                    ft.Text(
+                        "Esta acción no se puede deshacer.",
+                        size=14,
+                        color=ft.Colors.GREY_600,
+                        italic=True
+                    ),
+                    ft.Row(
+                        controls=[
+                            ft.TextButton("Cancelar", on_click=on_cancel),
+                            ft.ElevatedButton(
+                                "Eliminar", 
+                                on_click=on_delete,
+                                style=ft.ButtonStyle(bgcolor=ft.Colors.RED_600, color=ft.Colors.WHITE)
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
+                        spacing=10
+                    )
+                ],
+                spacing=15,
+                tight=True
+            ),
+            padding=20,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=15,
+                color=ft.Colors.BLACK26,
+                offset=ft.Offset(0, 4)
+            ),
+            width=400
         )
         
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
+        # Overlay para el fondo
+        overlay = ft.Container(
+            content=ft.Stack(
+                controls=[
+                    # Fondo semi-transparente
+                    ft.Container(
+                        bgcolor=ft.Colors.BLACK54,
+                        expand=True,
+                        on_click=on_cancel  # Cerrar al hacer clic fuera
+                    ),
+                    # Diálogo centrado
+                    ft.Container(
+                        content=dialog_content,
+                        alignment=ft.alignment.center,
+                        expand=True
+                    )
+                ]
+            ),
+            expand=True
+        )
+        
+        # Mostrar el diálogo personalizado
+        self.show_custom_dialog(overlay)
+        print("Diálogo de eliminar personalizado mostrado")
     
     def send_message(self, e=None):
         """
