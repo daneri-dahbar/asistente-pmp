@@ -121,6 +121,11 @@ class MainApp:
         page.theme_mode = ft.ThemeMode.LIGHT
         page.padding = 0
         
+        # Configurar ícono de la ventana (si existe el archivo)
+        icon_path = "assets/icon.ico"
+        if os.path.exists(icon_path):
+            page.window_icon = icon_path
+        
         # Mostrar interfaz de autenticación inicialmente
         self.show_auth()
 
@@ -144,11 +149,14 @@ def main():
             print("🔗 Powered by OpenAI, LangChain & Flet")
             print("-" * 50)
         
+        # Obtener la ruta absoluta del directorio de assets
+        assets_path = os.path.abspath("assets")
+        
         # Lanzar la aplicación
         ft.app(
             target=app.main,
             name="ChatGPT Assistant",
-            assets_dir="assets"
+            assets_dir=assets_path
         )
         
     except KeyboardInterrupt:
