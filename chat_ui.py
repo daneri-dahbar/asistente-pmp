@@ -9,66 +9,107 @@ from chatbot import ChatBot
 from db.models import User
 import threading
 import time
+import datetime
 
 def create_chat_message(message: str, is_user: bool):
     """
-    Función para crear mensajes individuales del chat con soporte para markdown y diseño responsivo.
+    Función para crear mensajes individuales del chat con estilo Slack/Discord.
     """
-    # Configurar colores y alineación según el remitente
-    if is_user:
-        bg_color = ft.Colors.BLUE_600
-        text_color = ft.Colors.WHITE
-        alignment = ft.MainAxisAlignment.END
-        margin = ft.margin.only(left=80, bottom=10, right=20)
-        border_radius = ft.border_radius.only(
-            top_left=12, top_right=12, bottom_left=12, bottom_right=4
-        )
-    else:
-        bg_color = ft.Colors.GREY_100
-        text_color = ft.Colors.BLACK87
-        alignment = ft.MainAxisAlignment.START
-        margin = ft.margin.only(right=80, bottom=10, left=20)
-        border_radius = ft.border_radius.only(
-            top_left=12, top_right=12, bottom_left=4, bottom_right=12
-        )
+    # Obtener timestamp actual
+    timestamp = datetime.datetime.now().strftime("%H:%M")
     
-    # Crear el contenido del mensaje con soporte para markdown
+    # Configurar avatar y nombre según el remitente
     if is_user:
-        # Para mensajes del usuario, usar texto simple
-        message_content = ft.Text(
-            message,
-            color=text_color,
-            size=14,
-            selectable=True,
-            no_wrap=False  # Permitir salto de línea
-        )
+        avatar_icon = ft.Icons.PERSON
+        avatar_color = ft.Colors.BLUE_600
+        username = "Tú"
+        username_color = ft.Colors.BLUE_700
     else:
-        # Para mensajes de la IA, usar Markdown simplificado
-        message_content = ft.Markdown(
-            message
-        )
+        avatar_icon = ft.Icons.SMART_TOY
+        avatar_color = ft.Colors.GREEN_600
+        username = "PMP Assistant"
+        username_color = ft.Colors.GREEN_700
     
-    # Crear el contenedor del mensaje
-    message_container = ft.Container(
-        content=message_content,
-        padding=ft.padding.all(12),
-        margin=margin,
-        bgcolor=bg_color,
-        border_radius=border_radius,
-        shadow=ft.BoxShadow(
-            spread_radius=0,
-            blur_radius=4,
-            color=ft.Colors.BLACK12,
-            offset=ft.Offset(0, 2)
+    # Avatar circular
+    avatar = ft.Container(
+        content=ft.Icon(
+            avatar_icon,
+            size=20,
+            color=ft.Colors.WHITE
         ),
-        expand=False,
-        width=None  # Se ajusta al contenido
+        width=36,
+        height=36,
+        bgcolor=avatar_color,
+        border_radius=18,
+        alignment=ft.alignment.center
     )
     
-    return ft.Row(
-        controls=[message_container],
-        alignment=alignment,
-        wrap=False
+    # Header con nombre de usuario y timestamp
+    header = ft.Row(
+        controls=[
+            ft.Text(
+                username,
+                size=14,
+                weight=ft.FontWeight.BOLD,
+                color=username_color
+            ),
+            ft.Text(
+                timestamp,
+                size=12,
+                color=ft.Colors.GREY_500
+            )
+        ],
+        spacing=8,
+        tight=True
+    )
+    
+    # Contenido del mensaje con ajuste automático de línea
+    if is_user:
+        message_content = ft.Text(
+            message,
+            size=14,
+            color=ft.Colors.GREY_800,
+            selectable=True,
+            no_wrap=False,  # Permitir salto de línea automático
+            expand=True     # Expandir para usar todo el ancho disponible
+        )
+    else:
+        message_content = ft.Markdown(
+            message,
+            selectable=True,
+            expand=True     # Expandir para usar todo el ancho disponible
+        )
+    
+    # Columna con header y contenido
+    content_column = ft.Column(
+        controls=[header, message_content],
+        spacing=4,
+        tight=True,
+        expand=True  # Expandir para usar todo el ancho disponible
+    )
+    
+    # Row principal con avatar y contenido
+    message_row = ft.Row(
+        controls=[
+            avatar,
+            content_column
+        ],
+        spacing=12,
+        vertical_alignment=ft.CrossAxisAlignment.START,
+        expand=True  # Expandir para usar todo el ancho disponible
+    )
+    
+    # Contenedor principal con hover effect
+    return ft.Container(
+        content=message_row,
+        padding=ft.padding.symmetric(horizontal=16, vertical=8),
+        margin=ft.margin.only(bottom=2),
+        bgcolor=ft.Colors.TRANSPARENT,
+        border_radius=4,
+        on_hover=lambda e: setattr(e.control, 'bgcolor', 
+                                  ft.Colors.GREY_50 if e.data == "true" else ft.Colors.TRANSPARENT) or e.page.update(),
+        expand=True,  # Expandir para usar todo el ancho disponible
+        width=None    # Sin ancho fijo para permitir responsividad completa
     )
 
 class ChatUI:
@@ -518,14 +559,20 @@ class ChatUI:
                     db.commit()
                     print("Conversación eliminada de la BD")
                 
-                # Si era la conversación actual, crear una nueva
+                # Si era la conversación actual, limpiar la interfaz
                 if self.current_session and self.current_session.id == session.id:
-                    self.new_conversation(None)
-                    print("Era la conversación actual, creando nueva")
-                else:
-                    # Solo recargar la lista
-                    self.load_conversations_list()
-                    print("Recargando lista de conversaciones")
+                    self.current_session = None
+                    self.chatbot.current_session = None
+                    self.chat_container.controls.clear()
+                    print("Conversación actual eliminada, interfaz limpiada")
+                
+                # Recargar la lista de conversaciones
+                self.load_conversations_list()
+                print("Lista de conversaciones recargada")
+                
+                # Actualizar la página
+                if self.page:
+                    self.page.update()
                 
             except Exception as error:
                 print(f"Error al eliminar conversación: {error}")
@@ -617,6 +664,12 @@ class ChatUI:
         if not self.chatbot or not self.chatbot.is_api_key_valid():
             self.show_error_message("Por favor configura tu API Key de OpenAI")
             return
+        
+        # Si no hay conversación activa, crear una nueva
+        if not self.current_session:
+            self.chatbot.start_new_conversation()
+            self.current_session = self.chatbot.current_session
+            print("Nueva conversación creada automáticamente al enviar mensaje")
         
         user_message = self.message_input.value.strip()
         self.message_input.value = ""
