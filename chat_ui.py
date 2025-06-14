@@ -807,6 +807,13 @@ class ChatUI:
                 "subtitle": "Estudio estructurado y guiado por áreas específicas",
                 "icon": ft.Icons.SCHOOL_OUTLINED,
                 "description": "Aprendizaje sistemático de temas específicos del PMBOK con sesiones guiadas y adaptativas."
+            },
+            {
+                "key": "evaluemos",
+                "title": "EVALUEMOS TU CONOCIMIENTO",
+                "subtitle": "Evaluación diagnóstica y práctica dirigida",
+                "icon": ft.Icons.QUIZ_OUTLINED,
+                "description": "Identifica fortalezas y debilidades con evaluaciones adaptativas y práctica específica."
             }
             # Aquí se pueden añadir más opciones en el futuro
         ]
@@ -882,6 +889,8 @@ class ChatUI:
                 self.update_charlemos_mode()
             elif mode == "estudiemos":
                 self.update_estudiemos_mode()
+            elif mode == "evaluemos":
+                self.update_evaluemos_mode()
             
             # Reconstruir el layout
             if self.page:
@@ -973,6 +982,70 @@ Aquí tendrás sesiones de estudio **estructuradas y adaptativas** para dominar 
 
 **¿Qué tema te gustaría estudiar hoy?** 
 Ejemplo: *"Quiero estudiar Risk Management"* o *"Necesito aprender Schedule Management"*"""
+            
+            welcome_widget = create_chat_message(welcome_message, False)
+            self.chat_container.controls.append(welcome_widget)
+    
+    def update_evaluemos_mode(self):
+        """
+        Actualiza la interfaz para el modo EVALUEMOS TU CONOCIMIENTO.
+        """
+        # Actualizar el placeholder del input
+        self.message_input.hint_text = "Ejemplo: 'Diagnóstico completo' o 'Evaluar Risk Management' o 'Práctica por debilidades'"
+        
+        # Actualizar el estado si no hay chatbot inicializado
+        if not self.chatbot:
+            self.status_text.value = "📊 Modo EVALUEMOS TU CONOCIMIENTO - Evaluación diagnóstica y práctica dirigida"
+            self.status_text.color = ft.Colors.BLUE_600
+        
+        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
+        if self.chatbot and len(self.chat_container.controls) == 0:
+            welcome_message = """¡Bienvenido al modo **EVALUEMOS TU CONOCIMIENTO**! 📊
+
+Identifica tus **fortalezas y debilidades** con evaluaciones adaptativas y práctica específica para el examen PMP.
+
+## 🎯 **Tipos de Evaluación:**
+
+### **📋 Diagnóstico Inicial:**
+• **Assessment completo** - 50 preguntas que cubren todo el PMBOK
+• **Identificación de gaps** - Análisis de áreas débiles  
+• **Reporte personalizado** - Plan de estudio recomendado
+
+### **🎯 Práctica por Área:**
+• **Selección específica** - Focus en un tema
+• **Sesiones cortas** - 10-15 preguntas por sesión
+• **Feedback inmediato** - Explicación detallada de cada respuesta
+• **Adaptive testing** - Dificultad se ajusta según performance
+
+### **💪 Práctica por Debilidades:**
+• **Target weak areas** - Solo preguntas de áreas débiles
+• **Reinforcement learning** - Repite conceptos hasta dominarlos
+• **Progress tracking** - Muestra mejora en tiempo real
+
+## 📚 **Dominios Evaluados:**
+
+**People Domain** | **Process Domain** | **Business Environment**
+• Leadership | • Risk Management | • Strategy & Governance
+• Team Management | • Schedule Management | • Compliance
+• Stakeholder Engagement | • Cost Management | • Benefits Realization
+| • Quality Management |
+| • Resource Management |
+| • Communications |
+| • Procurement |
+| • Scope Management |
+| • Integration |
+
+## ✨ **Características Especiales:**
+📝 **Estilo PMP real** - Preguntas largas con escenarios
+🔍 **Explicaciones detalladas** - Por qué cada opción es correcta/incorrecta
+📖 **Referencias al PMBOK** - Dónde encontrar más información
+⏱️ **Time tracking** - Mide tiempo para preparar examen real
+📊 **Analytics** - Score por dominio y tendencias temporales
+
+**¿Qué tipo de evaluación prefieres?**
+• *"Diagnóstico completo"* - Assessment inicial completo
+• *"Evaluar Risk Management"* - Práctica por área específica  
+• *"Práctica por debilidades"* - Focus en áreas débiles"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
