@@ -12,42 +12,76 @@ import time
 
 def create_chat_message(message: str, is_user: bool):
     """
-    Función para crear mensajes individuales del chat.
+    Función para crear mensajes individuales del chat con soporte para markdown y diseño responsivo.
     """
     # Configurar colores y alineación según el remitente
     if is_user:
         bg_color = ft.Colors.BLUE_600
         text_color = ft.Colors.WHITE
         alignment = ft.MainAxisAlignment.END
-        margin = ft.margin.only(left=50, bottom=10)
+        margin = ft.margin.only(left=80, bottom=10, right=20)
+        border_radius = ft.border_radius.only(
+            top_left=12, top_right=12, bottom_left=12, bottom_right=4
+        )
     else:
         bg_color = ft.Colors.GREY_100
         text_color = ft.Colors.BLACK87
         alignment = ft.MainAxisAlignment.START
-        margin = ft.margin.only(right=50, bottom=10)
+        margin = ft.margin.only(right=80, bottom=10, left=20)
+        border_radius = ft.border_radius.only(
+            top_left=12, top_right=12, bottom_left=4, bottom_right=12
+        )
+    
+    # Crear el contenido del mensaje con soporte para markdown
+    if is_user:
+        # Para mensajes del usuario, usar texto simple
+        message_content = ft.Text(
+            message,
+            color=text_color,
+            size=14,
+            selectable=True,
+            width=None,  # Permitir que se ajuste al contenido
+            no_wrap=False  # Permitir salto de línea
+        )
+    else:
+        # Para mensajes de la IA, usar Markdown
+        message_content = ft.Markdown(
+            message,
+            selectable_text=True,
+            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+            code_theme=ft.MarkdownCodeTheme.GITHUB,
+            code_style=ft.TextStyle(
+                font_family="Consolas",
+                size=13
+            ),
+            on_tap_link=lambda e: print(f"Link clicked: {e.data}")
+        )
     
     return ft.Row(
         controls=[
             ft.Container(
-                content=ft.Text(
-                    message,
-                    color=text_color,
-                    size=14,
-                    selectable=True
-                ),
+                content=message_content,
                 padding=ft.padding.all(12),
                 margin=margin,
                 bgcolor=bg_color,
-                border_radius=12,
+                border_radius=border_radius,
                 shadow=ft.BoxShadow(
                     spread_radius=0,
                     blur_radius=4,
                     color=ft.Colors.BLACK12,
                     offset=ft.Offset(0, 2)
+                ),
+                # Hacer que el contenedor sea responsivo
+                expand=False,
+                width=None,  # Se ajusta al contenido
+                constraints=ft.BoxConstraints(
+                    max_width=600,  # Ancho máximo para evitar líneas muy largas
+                    min_width=100   # Ancho mínimo
                 )
             )
         ],
-        alignment=alignment
+        alignment=alignment,
+        wrap=False
     )
 
 class ChatUI:
@@ -69,7 +103,10 @@ class ChatUI:
         self.chat_container = ft.Column(
             scroll=ft.ScrollMode.AUTO,
             auto_scroll=True,
-            spacing=5
+            spacing=5,
+            expand=True,
+            width=None,  # Se ajusta al contenedor padre
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH
         )
         
         # Lista de conversaciones (sidebar)
@@ -845,7 +882,9 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
             content=self.chat_container,
             padding=ft.padding.all(20),
             expand=True,
-            bgcolor=ft.Colors.WHITE
+            bgcolor=ft.Colors.WHITE,
+            width=None,  # Se ajusta al contenedor padre
+            height=None  # Se ajusta al contenido
         )
         
         # Área de entrada de mensajes
