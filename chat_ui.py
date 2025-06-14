@@ -62,6 +62,9 @@ class ChatUI:
         self.current_session = None
         self.sessions_list = []
         
+        # Estado de navegación
+        self.current_mode = "charlemos"  # Modo actual: charlemos, etc.
+        
         # Contenedores principales
         self.chat_container = ft.Column(
             scroll=ft.ScrollMode.AUTO,
@@ -111,6 +114,7 @@ class ChatUI:
         self.is_sending = False
         self.page = None
         self.sidebar_visible = True
+        self.nav_menu_visible = True
     
     def initialize_chatbot(self, page: ft.Page):
         """
@@ -120,9 +124,9 @@ class ChatUI:
         
         def init_bot():
             try:
-                self.chatbot = ChatBot(self.user.id)
+                self.chatbot = ChatBot(self.user.id, self.current_mode)
                 if self.chatbot.is_api_key_valid():
-                    self.status_text.value = f"✅ Conectado como {self.user.username} - Listo para chatear"
+                    self.status_text.value = f"✅ Conectado como {self.user.username} - Modo CHARLEMOS activo"
                     self.status_text.color = ft.Colors.GREEN_600
                     
                     # Establecer sesión actual
@@ -130,6 +134,10 @@ class ChatUI:
                     
                     # Cargar historial existente
                     self.load_conversation_history()
+                    
+                    # Si no hay mensajes, mostrar bienvenida del modo CHARLEMOS
+                    if len(self.chat_container.controls) == 0:
+                        self.update_charlemos_mode()
                 else:
                     self.status_text.value = "❌ API Key no configurada"
                     self.status_text.color = ft.Colors.RED_600
@@ -695,85 +703,159 @@ class ChatUI:
         Alterna la visibilidad del sidebar de conversaciones.
         """
         self.sidebar_visible = not self.sidebar_visible
+        if self.page:
+            # Reconstruir el layout
+            content = self.build_layout()
+            
+            # Encontrar el contenedor principal y actualizar su contenido
+            main_layout = self.page.controls[0]  # El Column principal
+            main_layout.controls[1] = content  # Reemplazar el contenido (índice 1 es el contenido después del header)
+            
+            self.page.update()
+    
+    def create_navigation_menu(self):
+        """
+        Crea el menú de navegación lateral izquierdo.
+        """
+        menu_items = [
+            {
+                "key": "charlemos",
+                "title": "CHARLEMOS",
+                "subtitle": "Chat libre con tutor IA especializado en PMP",
+                "icon": ft.Icons.CHAT_BUBBLE_OUTLINE,
+                "description": "Conversación abierta donde puedes hacer cualquier pregunta sobre PMP sin estructura predefinida."
+            }
+            # Aquí se pueden añadir más opciones en el futuro
+        ]
         
-        # Reconstruir la interfaz completa
-        self.page.controls.clear()
+        menu_controls = []
         
-        # Barra superior
-        header = ft.Container(
-            content=ft.Row(
-                controls=[
-                    ft.Row(
-                        controls=[
-                            ft.IconButton(
-                                icon=ft.Icons.MENU,
-                                tooltip="Alternar conversaciones",
-                                icon_color=ft.Colors.WHITE,
-                                on_click=self.toggle_sidebar
-                            ),
-                            ft.Text(
-                                "🤖 ChatGPT Assistant",
-                                size=18,
-                                weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.WHITE
-                            )
-                        ],
-                        spacing=10
-                    ),
-                    ft.Row(
-                        controls=[
-                            ft.Text(
-                                f"👤 {self.user.username}",
-                                size=14,
-                                color=ft.Colors.WHITE70
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.ADD_COMMENT,
-                                tooltip="Nueva conversación",
-                                icon_color=ft.Colors.WHITE,
-                                on_click=self.new_conversation
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.LOGOUT,
-                                tooltip="Cerrar sesión",
-                                icon_color=ft.Colors.WHITE,
-                                on_click=self.logout
-                            )
-                        ],
-                        spacing=5
-                    )
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-            ),
-            bgcolor=ft.Colors.BLUE_700,
-            padding=ft.padding.symmetric(20, 15),
-            shadow=ft.BoxShadow(
-                spread_radius=0,
-                blur_radius=4,
-                color=ft.Colors.BLACK26,
-                offset=ft.Offset(0, 2)
+        for item in menu_items:
+            is_selected = self.current_mode == item["key"]
+            
+            menu_item = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.Row(
+                            controls=[
+                                ft.Icon(
+                                    item["icon"],
+                                    color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700,
+                                    size=20
+                                ),
+                                ft.Column(
+                                    controls=[
+                                        ft.Text(
+                                            item["title"],
+                                            size=14,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700
+                                        ),
+                                        ft.Text(
+                                            item["subtitle"],
+                                            size=11,
+                                            color=ft.Colors.WHITE70 if is_selected else ft.Colors.BLUE_600,
+                                            max_lines=2,
+                                            overflow=ft.TextOverflow.ELLIPSIS
+                                        )
+                                    ],
+                                    spacing=2,
+                                    expand=True
+                                )
+                            ],
+                            spacing=10,
+                            alignment=ft.MainAxisAlignment.START
+                        )
+                    ],
+                    spacing=5
+                ),
+                padding=ft.padding.all(12),
+                margin=ft.margin.only(bottom=5),
+                bgcolor=ft.Colors.BLUE_700 if is_selected else ft.Colors.TRANSPARENT,
+                border_radius=8,
+                on_click=lambda e, mode=item["key"]: self.switch_mode(mode),
+                ink=True
             )
+            
+            menu_controls.append(menu_item)
+        
+        return ft.Column(
+            controls=menu_controls,
+            spacing=5
         )
+    
+    def switch_mode(self, mode: str):
+        """
+        Cambia el modo de la aplicación.
+        """
+        if self.current_mode != mode:
+            self.current_mode = mode
+            
+            # Reinicializar el chatbot con el nuevo modo
+            if self.chatbot:
+                self.chatbot = ChatBot(self.user.id, self.current_mode)
+                # Limpiar el chat para el nuevo modo
+                self.chat_container.controls.clear()
+            
+            # Actualizar la interfaz según el modo
+            if mode == "charlemos":
+                self.update_charlemos_mode()
+            
+            # Reconstruir el layout
+            if self.page:
+                content = self.build_layout()
+                main_layout = self.page.controls[0]
+                main_layout.controls[1] = content
+                self.page.update()
+    
+    def update_charlemos_mode(self):
+        """
+        Actualiza la interfaz para el modo CHARLEMOS.
+        """
+        # Actualizar el placeholder del input
+        self.message_input.hint_text = "Pregúntame cualquier cosa sobre PMP... ¿Qué es la gestión de riesgos? ¿Cómo se relaciona Agile con PMBOK?"
         
-        # Construir layout principal
-        content = self.build_layout()
+        # Actualizar el estado si no hay chatbot inicializado
+        if not self.chatbot:
+            self.status_text.value = "💬 Modo CHARLEMOS - Chat libre con tutor IA especializado en PMP"
+            self.status_text.color = ft.Colors.BLUE_600
         
-        # Layout principal
-        main_layout = ft.Column(
-            controls=[
-                header,
-                content
-            ],
-            spacing=0,
-            expand=True
-        )
-        
-        self.page.add(main_layout)
-        self.page.update()
+        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
+        if self.chatbot and len(self.chat_container.controls) == 0:
+            welcome_message = """¡Hola! 👋 Estás en modo **CHARLEMOS**.
+
+Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Algunos ejemplos:
+
+• "¿Qué es la gestión de riesgos?"
+• "No entiendo la diferencia entre schedule y timeline"
+• "Explícame como si tuviera 5 años qué es un stakeholder"
+• "¿Cómo se relaciona Agile con el PMBOK?"
+
+**Características especiales:**
+✨ **Clarificaciones**: Puedes pedirme que re-explique de otra forma
+🔍 **Profundización**: Di "profundiza en esto" para más detalles
+🎯 **Analogías**: Pide "dame una analogía" para entender mejor
+🔄 **Cambio libre**: Cambia de tema cuando quieras
+
+¡Empecemos! ¿Qué te gustaría saber sobre PMP?"""
+            
+            welcome_widget = create_chat_message(welcome_message, False)
+            self.chat_container.controls.append(welcome_widget)
+    
+    def toggle_nav_menu(self, e):
+        """
+        Alterna la visibilidad del menú de navegación.
+        """
+        self.nav_menu_visible = not self.nav_menu_visible
+        if self.page:
+            content = self.build_layout()
+            main_layout = self.page.controls[0]
+            main_layout.controls[1] = content
+            self.page.update()
     
     def build_layout(self):
         """
-        Construye el layout principal con o sin sidebar.
+        Construye el layout principal con menú de navegación, sidebar de conversaciones y área de chat.
         """
         # Área de chat principal
         chat_area = ft.Container(
@@ -821,61 +903,96 @@ class ChatUI:
             expand=True
         )
         
-        if self.sidebar_visible:
-            # Layout con sidebar
-            content = ft.Row(
-                controls=[
-                    # Sidebar de conversaciones
-                    ft.Container(
-                        content=ft.Column(
-                            controls=[
-                                # Header del sidebar
-                                ft.Container(
-                                    content=ft.Row(
-                                        controls=[
-                                            ft.Text(
-                                                "Conversaciones",
-                                                size=16,
-                                                weight=ft.FontWeight.BOLD,
-                                                color=ft.Colors.WHITE
-                                            ),
-                                            ft.IconButton(
-                                                icon=ft.Icons.ADD,
-                                                tooltip="Nueva conversación",
-                                                icon_color=ft.Colors.WHITE,
-                                                icon_size=20,
-                                                on_click=self.new_conversation
-                                            )
-                                        ],
-                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                                    ),
-                                    padding=ft.padding.all(15),
-                                    bgcolor=ft.Colors.BLUE_700
-                                ),
-                                # Lista de conversaciones
-                                ft.Container(
-                                    content=self.conversations_list,
-                                    padding=ft.padding.all(10),
-                                    expand=True
-                                )
-                            ],
-                            spacing=0
-                        ),
-                        width=280,
-                        bgcolor=ft.Colors.GREY_50,
-                        border=ft.border.only(right=ft.BorderSide(1, ft.Colors.GREY_300))
-                    ),
-                    # Área principal de chat
-                    main_chat_area
-                ],
-                spacing=0,
-                expand=True
-            )
-        else:
-            # Layout sin sidebar
-            content = main_chat_area
+        # Construir el layout según la visibilidad de los paneles
+        layout_controls = []
         
-        return content
+        # Menú de navegación (siempre visible por ahora, pero preparado para toggle)
+        if self.nav_menu_visible:
+            nav_menu = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        # Header del menú de navegación
+                        ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    ft.Text(
+                                        "🎯 PMP Assistant",
+                                        size=16,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=ft.Colors.WHITE
+                                    )
+                                ],
+                                alignment=ft.MainAxisAlignment.CENTER
+                            ),
+                            padding=ft.padding.all(15),
+                            bgcolor=ft.Colors.BLUE_800
+                        ),
+                        # Menú de navegación
+                        ft.Container(
+                            content=self.create_navigation_menu(),
+                            padding=ft.padding.all(15),
+                            expand=True
+                        )
+                    ],
+                    spacing=0
+                ),
+                width=300,
+                bgcolor=ft.Colors.BLUE_50,
+                border=ft.border.only(right=ft.BorderSide(1, ft.Colors.BLUE_200))
+            )
+            layout_controls.append(nav_menu)
+        
+        # Sidebar de conversaciones
+        if self.sidebar_visible:
+            conversations_sidebar = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        # Header del sidebar
+                        ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    ft.Text(
+                                        "Conversaciones",
+                                        size=14,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=ft.Colors.WHITE
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.Icons.ADD,
+                                        tooltip="Nueva conversación",
+                                        icon_color=ft.Colors.WHITE,
+                                        icon_size=18,
+                                        on_click=self.new_conversation
+                                    )
+                                ],
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                            ),
+                            padding=ft.padding.all(12),
+                            bgcolor=ft.Colors.BLUE_700
+                        ),
+                        # Lista de conversaciones
+                        ft.Container(
+                            content=self.conversations_list,
+                            padding=ft.padding.all(10),
+                            expand=True
+                        )
+                    ],
+                    spacing=0
+                ),
+                width=280,
+                bgcolor=ft.Colors.GREY_50,
+                border=ft.border.only(right=ft.BorderSide(1, ft.Colors.GREY_300))
+            )
+            layout_controls.append(conversations_sidebar)
+        
+        # Área principal de chat
+        layout_controls.append(main_chat_area)
+        
+        return ft.Row(
+            controls=layout_controls,
+            spacing=0,
+            expand=True
+        )
     
     def logout(self, e):
         """
@@ -896,6 +1013,12 @@ class ChatUI:
                 controls=[
                     ft.Row(
                         controls=[
+                            ft.IconButton(
+                                icon=ft.Icons.APPS,
+                                tooltip="Alternar menú de navegación",
+                                icon_color=ft.Colors.WHITE,
+                                on_click=self.toggle_nav_menu
+                            ),
                             ft.IconButton(
                                 icon=ft.Icons.MENU,
                                 tooltip="Alternar conversaciones",
@@ -963,6 +1086,9 @@ class ChatUI:
         
         # Inicializar chatbot
         self.initialize_chatbot(page)
+        
+        # Configurar modo inicial
+        self.update_charlemos_mode()
         
         # Enfocar el campo de entrada
         self.message_input.focus()

@@ -20,14 +20,16 @@ class ChatBot:
     y maneja la persistencia de datos.
     """
     
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: int, mode: str = "charlemos"):
         """
         Inicializa el chatbot con configuración de OpenAI y base de datos.
         
         Args:
             user_id (int): ID del usuario autenticado
+            mode (str): Modo de operación del chatbot (charlemos, etc.)
         """
         self.user_id = user_id
+        self.mode = mode
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY no encontrada en variables de entorno")
@@ -49,12 +51,56 @@ class ChatBot:
         self.conversation_history = []
         self._load_conversation_history()
         
-        # Mensaje del sistema para definir el comportamiento
-        self.system_message = SystemMessage(
-            content="Eres un asistente de IA útil y amigable. "
-                   "Responde de manera clara, concisa y educada. "
-                   "Puedes ayudar con una amplia variedad de temas."
-        )
+        # Configurar mensaje del sistema según el modo
+        self.system_message = self._get_system_message_for_mode(mode)
+    
+    def _get_system_message_for_mode(self, mode: str) -> SystemMessage:
+        """
+        Retorna el mensaje del sistema apropiado según el modo.
+        
+        Args:
+            mode (str): Modo de operación
+            
+        Returns:
+            SystemMessage: Mensaje del sistema configurado
+        """
+        if mode == "charlemos":
+            return SystemMessage(
+                content="""Eres un tutor especializado en PMP (Project Management Professional) y gestión de proyectos. Tu objetivo es ayudar a estudiantes y profesionales a entender conceptos del PMBOK Guide y prepararse para la certificación PMP.
+
+CARACTERÍSTICAS DE TU PERSONALIDAD:
+- Eres paciente, didáctico y siempre positivo
+- Explicas conceptos complejos de manera simple y clara
+- Usas analogías y ejemplos prácticos del mundo real
+- Fomentas el aprendizaje activo y la reflexión
+
+CAPACIDADES ESPECIALES:
+✨ **Clarificaciones**: Cuando alguien dice "no entiendo" o "explícalo de otra forma", reformulas completamente tu explicación usando diferentes palabras y enfoques
+🔍 **Profundización**: Cuando piden "profundiza en esto" o "más detalles", expandes el tema con información adicional, ejemplos y conexiones
+🎯 **Analogías**: Cuando piden "dame una analogía", creas comparaciones creativas y fáciles de entender
+🔄 **Cambio libre**: Permites cambiar de tema libremente y mantienes el contexto
+
+CONOCIMIENTO ESPECIALIZADO:
+- Dominas completamente el PMBOK Guide 7ma edición
+- Conoces las 10 áreas de conocimiento y 5 grupos de procesos
+- Entiendes metodologías ágiles y su relación con PMP
+- Tienes experiencia práctica en gestión de proyectos
+
+ESTILO DE RESPUESTA:
+- Usa emojis para hacer las explicaciones más amigables
+- Estructura la información con bullets y secciones claras
+- Incluye ejemplos prácticos siempre que sea posible
+- Termina con preguntas que fomenten la reflexión o el diálogo
+
+Responde siempre en español y mantén un tono profesional pero cercano."""
+            )
+        else:
+            # Mensaje por defecto para otros modos
+            return SystemMessage(
+                content="Eres un asistente de IA útil y amigable. "
+                       "Responde de manera clara, concisa y educada. "
+                       "Puedes ayudar con una amplia variedad de temas."
+            )
     
     def _load_conversation_history(self):
         """
