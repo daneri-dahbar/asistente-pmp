@@ -43,17 +43,9 @@ def create_chat_message(message: str, is_user: bool):
             no_wrap=False  # Permitir salto de línea
         )
     else:
-        # Para mensajes de la IA, usar Markdown
+        # Para mensajes de la IA, usar Markdown simplificado
         message_content = ft.Markdown(
-            message,
-            selectable_text=True,
-            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
-            code_theme=ft.MarkdownCodeTheme.GITHUB,
-            code_style=ft.TextStyle(
-                font_family="Consolas",
-                size=13
-            ),
-            on_tap_link=lambda e: print(f"Link clicked: {e.data}")
+            message
         )
     
     # Crear el contenedor del mensaje
