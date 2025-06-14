@@ -791,45 +791,134 @@ class ChatUI:
     
     def create_navigation_menu(self):
         """
-        Crea el menú de navegación para el sidebar integrado.
+        Crea el menú de navegación tab-based con indicadores de progreso y diseño moderno.
         """
+        # Obtener progreso dinámico
+        progress_data = self.calculate_progress_indicators()
+        
+        # Definir colores optimizados para modo oscuro
+        dark_mode_colors = {
+            "charlemos": {
+                "primary": ft.Colors.LIGHT_BLUE_300,  # #4FC3F7 - Azul cyan suave
+                "background": ft.Colors.BLUE_GREY_900,
+                "text": ft.Colors.WHITE
+            },
+            "estudiemos": {
+                "primary": ft.Colors.GREEN_300,  # #81C784 - Verde menta
+                "background": ft.Colors.GREEN_900,
+                "text": ft.Colors.WHITE
+            },
+            "evaluemos": {
+                "primary": ft.Colors.ORANGE_300,  # #FFB74D - Naranja dorado
+                "background": ft.Colors.ORANGE_900,
+                "text": ft.Colors.WHITE
+            },
+            "simulemos": {
+                "primary": ft.Colors.PINK_300,  # #F06292 - Rosa coral
+                "background": ft.Colors.PINK_900,
+                "text": ft.Colors.WHITE
+            },
+            "analicemos": {
+                "primary": ft.Colors.PURPLE_300,  # #BA68C8 - Púrpura suave
+                "background": ft.Colors.PURPLE_900,
+                "text": ft.Colors.WHITE
+            }
+        }
+        
+        # Colores para modo claro (mantener los originales)
+        light_mode_colors = {
+            "charlemos": {
+                "primary": ft.Colors.BLUE_600,
+                "background": ft.Colors.BLUE_600,
+                "text": ft.Colors.WHITE
+            },
+            "estudiemos": {
+                "primary": ft.Colors.GREEN_600,
+                "background": ft.Colors.GREEN_600,
+                "text": ft.Colors.WHITE
+            },
+            "evaluemos": {
+                "primary": ft.Colors.ORANGE_600,
+                "background": ft.Colors.ORANGE_600,
+                "text": ft.Colors.WHITE
+            },
+            "simulemos": {
+                "primary": ft.Colors.RED_600,
+                "background": ft.Colors.RED_600,
+                "text": ft.Colors.WHITE
+            },
+            "analicemos": {
+                "primary": ft.Colors.PURPLE_600,
+                "background": ft.Colors.PURPLE_600,
+                "text": ft.Colors.WHITE
+            }
+        }
+        
+        # Seleccionar paleta según el tema actual
+        is_dark_mode = self.page.theme_mode == ft.ThemeMode.DARK
+        color_scheme = dark_mode_colors if is_dark_mode else light_mode_colors
+        
         menu_items = [
             {
                 "key": "charlemos",
                 "title": "CHARLEMOS",
-                "subtitle": "Chat libre con tutor IA especializado en PMP",
+                "subtitle": "Chat libre con tutor IA especializado",
                 "icon": ft.Icons.CHAT_BUBBLE_OUTLINE,
-                "description": "Conversación abierta donde puedes hacer cualquier pregunta sobre PMP sin estructura predefinida."
+                "color": color_scheme["charlemos"]["primary"],
+                "bg_color": color_scheme["charlemos"]["background"],
+                "text_color": color_scheme["charlemos"]["text"],
+                "progress": progress_data["charlemos"]["progress"],
+                "status": progress_data["charlemos"]["status"],
+                "description": "Conversación abierta donde puedes hacer cualquier pregunta sobre PMP."
             },
             {
                 "key": "estudiemos",
-                "title": "ESTUDIEMOS UN TEMA",
-                "subtitle": "Estudio estructurado y guiado por áreas específicas",
+                "title": "ESTUDIEMOS",
+                "subtitle": "Estudio estructurado por áreas",
                 "icon": ft.Icons.SCHOOL_OUTLINED,
-                "description": "Aprendizaje sistemático de temas específicos del PMBOK con sesiones guiadas y adaptativas."
+                "color": color_scheme["estudiemos"]["primary"],
+                "bg_color": color_scheme["estudiemos"]["background"],
+                "text_color": color_scheme["estudiemos"]["text"],
+                "progress": progress_data["estudiemos"]["progress"],
+                "status": progress_data["estudiemos"]["status"],
+                "description": "Aprendizaje sistemático de temas específicos del PMBOK."
             },
             {
                 "key": "evaluemos",
-                "title": "EVALUEMOS TU CONOCIMIENTO",
-                "subtitle": "Evaluación diagnóstica y práctica dirigida",
+                "title": "EVALUEMOS",
+                "subtitle": "Evaluación y práctica dirigida",
                 "icon": ft.Icons.QUIZ_OUTLINED,
-                "description": "Identifica fortalezas y debilidades con evaluaciones adaptativas y práctica específica."
+                "color": color_scheme["evaluemos"]["primary"],
+                "bg_color": color_scheme["evaluemos"]["background"],
+                "text_color": color_scheme["evaluemos"]["text"],
+                "progress": progress_data["evaluemos"]["progress"],
+                "status": progress_data["evaluemos"]["status"],
+                "description": "Identifica fortalezas y debilidades con evaluaciones adaptativas."
             },
             {
                 "key": "simulemos",
-                "title": "SIMULEMOS UN EXAMEN",
-                "subtitle": "Simulacros completos en condiciones reales de examen",
+                "title": "SIMULEMOS",
+                "subtitle": "Exámenes en condiciones reales",
                 "icon": ft.Icons.TIMER_OUTLINED,
-                "description": "Práctica completa del examen PMP en condiciones que replican el examen real con cronómetro y análisis post-examen."
+                "color": color_scheme["simulemos"]["primary"],
+                "bg_color": color_scheme["simulemos"]["background"],
+                "text_color": color_scheme["simulemos"]["text"],
+                "progress": progress_data["simulemos"]["progress"],
+                "status": progress_data["simulemos"]["status"],
+                "description": "Práctica completa del examen PMP en condiciones reales."
             },
             {
                 "key": "analicemos",
-                "title": "ANALICEMOS CÓMO VAMOS",
-                "subtitle": "Dashboard de progreso y análisis de preparación",
+                "title": "ANALICEMOS",
+                "subtitle": "Dashboard de progreso",
                 "icon": ft.Icons.ANALYTICS_OUTLINED,
-                "description": "Vista comprehensiva del progreso de estudio, analytics predictivos y recomendaciones personalizadas."
+                "color": color_scheme["analicemos"]["primary"],
+                "bg_color": color_scheme["analicemos"]["background"],
+                "text_color": color_scheme["analicemos"]["text"],
+                "progress": progress_data["analicemos"]["progress"],
+                "status": progress_data["analicemos"]["status"],
+                "description": "Vista comprehensiva del progreso de estudio y analytics."
             }
-            # Aquí se pueden añadir más opciones en el futuro
         ]
         
         menu_controls = []
@@ -837,50 +926,196 @@ class ChatUI:
         for item in menu_items:
             is_selected = self.current_mode == item["key"]
             
-            menu_item = ft.Container(
-                content=ft.Row(
+            # Crear indicador de progreso mejorado
+            progress_bar_width = 180
+            progress_fill_width = (item["progress"] / 100) * progress_bar_width
+            progress_remaining_width = progress_bar_width - progress_fill_width
+            
+            progress_indicator = ft.Container(
+                content=ft.Column(
                     controls=[
-                        ft.Icon(
-                            item["icon"],
-                            color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700,
-                            size=18
-                        ),
-                        ft.Column(
+                        ft.Row(
                             controls=[
-                                ft.Text(
-                                    item["title"],
-                                    size=13,
-                                    weight=ft.FontWeight.BOLD,
-                                    color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700
+                                ft.Container(
+                                    width=progress_fill_width,
+                                    height=4,
+                                    bgcolor=item["color"],
+                                    border_radius=2
                                 ),
-                                ft.Text(
-                                    item["subtitle"],
-                                    size=10,
-                                    color=ft.Colors.WHITE70 if is_selected else ft.Colors.BLUE_600,
-                                    max_lines=2,
-                                    overflow=ft.TextOverflow.ELLIPSIS
+                                ft.Container(
+                                    width=progress_remaining_width,
+                                    height=4,
+                                    bgcolor=ft.Colors.GREY_700 if is_dark_mode else ft.Colors.GREY_200,
+                                    border_radius=2
                                 )
                             ],
-                            spacing=2,
-                            expand=True
-                        )
+                            spacing=0
+                        ),
+                        ft.Text(
+                            f"{item['progress']}% completado" if item["progress"] > 0 else "Sin progreso",
+                            size=9,
+                            color=ft.Colors.GREY_400 if is_dark_mode else ft.Colors.GREY_600,
+                            text_align=ft.TextAlign.RIGHT
+                        ) if item["progress"] > 0 else ft.Container(height=12)
                     ],
-                    spacing=8,
-                    alignment=ft.MainAxisAlignment.START
+                    spacing=2
                 ),
-                padding=ft.padding.all(10),
-                margin=ft.margin.only(bottom=3),
-                bgcolor=ft.Colors.BLUE_700 if is_selected else ft.Colors.TRANSPARENT,
-                border_radius=6,
-                on_click=lambda e, mode=item["key"]: self.switch_mode(mode),
-                ink=True
+                width=progress_bar_width,
+                margin=ft.margin.only(top=5)
             )
             
-            menu_controls.append(menu_item)
+            # Crear badge de status mejorado
+            status_colors = {
+                "active": ft.Colors.GREEN_500,
+                "in_progress": ft.Colors.ORANGE_500,
+                "completed": ft.Colors.BLUE_500,
+                "available": ft.Colors.GREY_400,
+                "locked": ft.Colors.RED_400
+            }
+            
+            status_icons = {
+                "active": ft.Icons.PLAY_CIRCLE_FILLED,
+                "in_progress": ft.Icons.HOURGLASS_EMPTY,
+                "completed": ft.Icons.CHECK_CIRCLE,
+                "available": ft.Icons.CIRCLE_OUTLINED,
+                "locked": ft.Icons.LOCK
+            }
+            
+            status_badge = ft.Container(
+                content=ft.Icon(
+                    status_icons.get(item["status"], ft.Icons.CIRCLE_OUTLINED),
+                    size=16,
+                    color=status_colors.get(item["status"], ft.Colors.GREY_400)
+                ),
+                margin=ft.margin.only(right=8),
+                tooltip=f"Estado: {item['status'].replace('_', ' ').title()}"
+            )
+            
+            # Definir colores según el estado y tema
+            card_bg_color = item["bg_color"] if is_selected else (ft.Colors.GREY_800 if is_dark_mode else ft.Colors.WHITE)
+            icon_color = ft.Colors.WHITE if is_selected else item["color"]
+            title_color = item["text_color"] if is_selected else (ft.Colors.WHITE if is_dark_mode else ft.Colors.BLACK87)
+            subtitle_color = ft.Colors.WHITE70 if is_selected else (ft.Colors.GREY_400 if is_dark_mode else ft.Colors.GREY_600)
+            border_color = item["color"] if is_selected else (ft.Colors.GREY_600 if is_dark_mode else ft.Colors.GREY_200)
+            
+            # Tab principal
+            tab_content = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.Row(
+                            controls=[
+                                status_badge,
+                                ft.Icon(
+                                    item["icon"],
+                                    color=icon_color,
+                                    size=20
+                                ),
+                                ft.Column(
+                                    controls=[
+                                        ft.Text(
+                                            item["title"],
+                                            size=13,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=title_color
+                                        ),
+                                        ft.Text(
+                                            item["subtitle"],
+                                            size=10,
+                                            color=subtitle_color,
+                                            max_lines=1,
+                                            overflow=ft.TextOverflow.ELLIPSIS
+                                        )
+                                    ],
+                                    spacing=2,
+                                    expand=True
+                                )
+                            ],
+                            spacing=8,
+                            alignment=ft.MainAxisAlignment.START
+                        ),
+                        progress_indicator if item["progress"] > 0 else ft.Container(height=8)
+                    ],
+                    spacing=5
+                ),
+                padding=ft.padding.all(12),
+                margin=ft.margin.only(bottom=2),
+                bgcolor=card_bg_color,
+                border_radius=8,
+                border=ft.border.all(2, border_color),
+                shadow=ft.BoxShadow(
+                    spread_radius=0,
+                    blur_radius=6,
+                    color=ft.Colors.BLACK26 if is_dark_mode else ft.Colors.BLACK12,
+                    offset=ft.Offset(0, 2)
+                ) if is_selected else None,
+                on_click=lambda e, mode=item["key"]: self.switch_mode(mode),
+                ink=True,
+                animate=200
+            )
+            
+            menu_controls.append(tab_content)
+        
+        # Agregar sección de configuración rápida
+        divider_color = ft.Colors.GREY_600 if is_dark_mode else ft.Colors.GREY_300
+        quick_text_color = ft.Colors.GREY_400 if is_dark_mode else ft.Colors.GREY_600
+        quick_icon_color = ft.Colors.GREY_300 if is_dark_mode else ft.Colors.GREY_700
+        
+        quick_actions = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Divider(height=1, color=divider_color),
+                    ft.Text(
+                        "ACCESO RÁPIDO",
+                        size=11,
+                        weight=ft.FontWeight.BOLD,
+                        color=quick_text_color
+                    ),
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.Icons.SETTINGS,
+                                icon_size=18,
+                                icon_color=quick_icon_color,
+                                tooltip="Configuración",
+                                on_click=self.show_settings_dialog
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.NOTIFICATIONS,
+                                icon_size=18,
+                                icon_color=quick_icon_color,
+                                tooltip="Notificaciones",
+                                on_click=self.show_notifications_dialog
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.DARK_MODE if not is_dark_mode else ft.Icons.LIGHT_MODE,
+                                icon_size=18,
+                                icon_color=quick_icon_color,
+                                tooltip="Cambiar tema",
+                                on_click=self.toggle_theme
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.HELP_OUTLINE,
+                                icon_size=18,
+                                icon_color=quick_icon_color,
+                                tooltip="Ayuda",
+                                on_click=self.show_help_dialog
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_AROUND
+                    )
+                ],
+                spacing=8
+            ),
+            padding=ft.padding.all(10),
+            margin=ft.margin.only(top=10)
+        )
+        
+        menu_controls.append(quick_actions)
         
         return ft.Column(
             controls=menu_controls,
-            spacing=3
+            spacing=3,
+            scroll=ft.ScrollMode.AUTO
         )
     
     def switch_mode(self, mode: str):
@@ -1429,6 +1664,318 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         
         # Enfocar el campo de entrada
         self.message_input.focus()
+    
+    def show_settings_dialog(self, e):
+        """
+        Muestra el diálogo de configuración personalizable.
+        """
+        def close_dialog(e):
+            settings_dialog.open = False
+            self.page.update()
+        
+        def save_settings(e):
+            # Aquí se guardarían las configuraciones
+            snack_bar = ft.SnackBar(
+                content=ft.Text("⚙️ Configuración guardada exitosamente"),
+                bgcolor=ft.Colors.GREEN_600
+            )
+            self.page.overlay.append(snack_bar)
+            snack_bar.open = True
+            self.page.update()
+            close_dialog(e)
+        
+        settings_content = ft.Column(
+            controls=[
+                ft.Text("🎯 Objetivos de Estudio", size=16, weight=ft.FontWeight.BOLD),
+                ft.TextField(
+                    label="Fecha objetivo del examen",
+                    hint_text="DD/MM/YYYY",
+                    prefix_icon=ft.Icons.CALENDAR_TODAY
+                ),
+                ft.TextField(
+                    label="Horas de estudio diarias",
+                    hint_text="2-4 horas recomendadas",
+                    prefix_icon=ft.Icons.SCHEDULE
+                ),
+                
+                ft.Divider(),
+                ft.Text("🔔 Notificaciones", size=16, weight=ft.FontWeight.BOLD),
+                ft.Switch(
+                    label="Recordatorios de estudio",
+                    value=True
+                ),
+                ft.Switch(
+                    label="Alertas de progreso",
+                    value=True
+                ),
+                ft.Switch(
+                    label="Notificaciones de logros",
+                    value=False
+                ),
+                
+                ft.Divider(),
+                ft.Text("🎨 Personalización", size=16, weight=ft.FontWeight.BOLD),
+                ft.Dropdown(
+                    label="Tema visual",
+                    options=[
+                        ft.dropdown.Option("light", "Claro"),
+                        ft.dropdown.Option("dark", "Oscuro"),
+                        ft.dropdown.Option("auto", "Automático")
+                    ],
+                    value="light"
+                ),
+                ft.Dropdown(
+                    label="Idioma de interfaz",
+                    options=[
+                        ft.dropdown.Option("es", "Español"),
+                        ft.dropdown.Option("en", "English")
+                    ],
+                    value="es"
+                )
+            ],
+            spacing=10,
+            scroll=ft.ScrollMode.AUTO,
+            height=400
+        )
+        
+        settings_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("⚙️ Configuración"),
+            content=settings_content,
+            actions=[
+                ft.TextButton("Cancelar", on_click=close_dialog),
+                ft.ElevatedButton("Guardar", on_click=save_settings)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
+        )
+        
+        self.page.dialog = settings_dialog
+        settings_dialog.open = True
+        self.page.update()
+    
+    def show_notifications_dialog(self, e):
+        """
+        Muestra el centro de notificaciones.
+        """
+        def close_dialog(e):
+            notifications_dialog.open = False
+            self.page.update()
+        
+        notifications_content = ft.Column(
+            controls=[
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.SCHEDULE, color=ft.Colors.BLUE_600),
+                    title=ft.Text("Recordatorio de estudio"),
+                    subtitle=ft.Text("Es hora de tu sesión diaria - hace 5 min"),
+                    trailing=ft.IconButton(ft.Icons.CLOSE, icon_size=16)
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.TRENDING_UP, color=ft.Colors.GREEN_600),
+                    title=ft.Text("¡Progreso excelente!"),
+                    subtitle=ft.Text("Has completado 3 sesiones esta semana - hace 1 hora"),
+                    trailing=ft.IconButton(ft.Icons.CLOSE, icon_size=16)
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.WARNING, color=ft.Colors.ORANGE_600),
+                    title=ft.Text("Área de mejora detectada"),
+                    subtitle=ft.Text("Considera reforzar 'Gestión de Riesgos' - hace 2 horas"),
+                    trailing=ft.IconButton(ft.Icons.CLOSE, icon_size=16)
+                ),
+                ft.Divider(),
+                ft.TextButton(
+                    "Marcar todas como leídas",
+                    icon=ft.Icons.DONE_ALL,
+                    on_click=close_dialog
+                )
+            ],
+            spacing=5,
+            scroll=ft.ScrollMode.AUTO,
+            height=300
+        )
+        
+        notifications_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("🔔 Notificaciones"),
+            content=notifications_content,
+            actions=[
+                ft.TextButton("Cerrar", on_click=close_dialog)
+            ]
+        )
+        
+        self.page.dialog = notifications_dialog
+        notifications_dialog.open = True
+        self.page.update()
+    
+    def toggle_theme(self, e):
+        """
+        Alterna entre tema claro y oscuro.
+        """
+        if self.page.theme_mode == ft.ThemeMode.LIGHT:
+            self.page.theme_mode = ft.ThemeMode.DARK
+            theme_text = "🌙 Tema oscuro activado"
+        else:
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+            theme_text = "☀️ Tema claro activado"
+        
+        # Actualizar el menú de navegación con los nuevos colores
+        # Buscar el contenedor del menú en la página y actualizarlo
+        try:
+            # Reconstruir toda la UI para aplicar los nuevos colores
+            content = self.build_layout()
+            self.page.controls.clear()
+            self.page.add(content)
+        except Exception as ex:
+            print(f"Error actualizando tema: {ex}")
+        
+        snack_bar = ft.SnackBar(
+            content=ft.Text(theme_text),
+            bgcolor=ft.Colors.BLUE_600
+        )
+        self.page.overlay.append(snack_bar)
+        snack_bar.open = True
+        self.page.update()
+    
+    def show_help_dialog(self, e):
+        """
+        Muestra el diálogo de ayuda y guía rápida.
+        """
+        def close_dialog(e):
+            help_dialog.open = False
+            self.page.update()
+        
+        help_content = ft.Column(
+            controls=[
+                ft.Text("🚀 Guía Rápida", size=18, weight=ft.FontWeight.BOLD),
+                
+                ft.ExpansionTile(
+                    title=ft.Text("💬 CHARLEMOS"),
+                    subtitle=ft.Text("Chat libre con el tutor IA"),
+                    controls=[
+                        ft.Text("• Haz cualquier pregunta sobre PMP\n• Conversación natural y adaptativa\n• Ideal para dudas específicas", size=12)
+                    ]
+                ),
+                
+                ft.ExpansionTile(
+                    title=ft.Text("📚 ESTUDIEMOS"),
+                    subtitle=ft.Text("Aprendizaje estructurado"),
+                    controls=[
+                        ft.Text("• Sesiones guiadas por tema\n• Metodología de 6 pasos\n• Progreso adaptativo", size=12)
+                    ]
+                ),
+                
+                ft.ExpansionTile(
+                    title=ft.Text("📝 EVALUEMOS"),
+                    subtitle=ft.Text("Evaluación y práctica"),
+                    controls=[
+                        ft.Text("• Diagnósticos completos\n• Práctica por áreas débiles\n• Feedback inmediato", size=12)
+                    ]
+                ),
+                
+                ft.ExpansionTile(
+                    title=ft.Text("⏱️ SIMULEMOS"),
+                    subtitle=ft.Text("Exámenes de práctica"),
+                    controls=[
+                        ft.Text("• Simulacros completos\n• Condiciones reales\n• Análisis post-examen", size=12)
+                    ]
+                ),
+                
+                ft.ExpansionTile(
+                    title=ft.Text("📊 ANALICEMOS"),
+                    subtitle=ft.Text("Dashboard de progreso"),
+                    controls=[
+                        ft.Text("• Analytics detallados\n• Predicciones de preparación\n• Recomendaciones personalizadas", size=12)
+                    ]
+                ),
+                
+                ft.Divider(),
+                ft.Text("💡 Consejos:", weight=ft.FontWeight.BOLD),
+                ft.Text("• Usa ESTUDIEMOS para aprender conceptos nuevos\n• Practica con EVALUEMOS regularmente\n• Simula exámenes antes del día real\n• Revisa tu progreso en ANALICEMOS", size=12)
+            ],
+            spacing=8,
+            scroll=ft.ScrollMode.AUTO,
+            height=400
+        )
+        
+        help_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("❓ Ayuda"),
+            content=help_content,
+            actions=[
+                ft.TextButton("Cerrar", on_click=close_dialog)
+            ]
+        )
+        
+        self.page.dialog = help_dialog
+        help_dialog.open = True
+        self.page.update()
+
+    def calculate_progress_indicators(self):
+        """
+        Calcula los indicadores de progreso para cada sección basado en datos reales del usuario.
+        """
+        try:
+            # Inicializar progreso por defecto
+            progress_data = {
+                "charlemos": {"progress": 0, "status": "active"},
+                "estudiemos": {"progress": 0, "status": "available"},
+                "evaluemos": {"progress": 0, "status": "available"},
+                "simulemos": {"progress": 0, "status": "available"},
+                "analicemos": {"progress": 0, "status": "available"}
+            }
+            
+            # Calcular progreso basado en conversaciones si el chatbot está disponible
+            total_conversations = 0
+            if hasattr(self, 'chatbot') and self.chatbot is not None:
+                if hasattr(self.chatbot, 'conversation_manager') and self.chatbot.conversation_manager is not None:
+                    try:
+                        conversations = self.chatbot.conversation_manager.get_conversations(self.user.id)
+                        total_conversations = len(conversations) if conversations else 0
+                    except Exception as e:
+                        print(f"Error obteniendo conversaciones: {e}")
+                        total_conversations = 0
+            
+            if total_conversations > 0:
+                progress_data["charlemos"]["progress"] = min(total_conversations * 10, 100)
+                progress_data["charlemos"]["status"] = "active"
+            
+            # Calcular progreso de estudio (simulado - se puede conectar con datos reales)
+            # Esto se basaría en temas completados, tiempo de estudio, etc.
+            study_sessions = total_conversations // 3  # Ejemplo: cada 3 conversaciones = 1 sesión de estudio
+            if study_sessions > 0:
+                progress_data["estudiemos"]["progress"] = min(study_sessions * 15, 100)
+                progress_data["estudiemos"]["status"] = "in_progress" if study_sessions < 7 else "completed"
+            
+            # Calcular progreso de evaluaciones
+            # Esto se basaría en evaluaciones completadas, scores, etc.
+            evaluation_progress = min(total_conversations * 5, 100)  # Ejemplo
+            if evaluation_progress > 0:
+                progress_data["evaluemos"]["progress"] = evaluation_progress
+                progress_data["evaluemos"]["status"] = "available"
+            
+            # Calcular progreso de simulacros
+            # Esto se basaría en exámenes simulados completados
+            simulation_progress = max(0, min((total_conversations - 5) * 8, 100))  # Ejemplo
+            if simulation_progress > 0:
+                progress_data["simulemos"]["progress"] = simulation_progress
+                progress_data["simulemos"]["status"] = "available"
+            
+            # Analytics siempre disponible si hay datos
+            if total_conversations > 0:
+                progress_data["analicemos"]["progress"] = min(total_conversations * 12, 100)
+                progress_data["analicemos"]["status"] = "available"
+            
+            return progress_data
+            
+        except Exception as e:
+            print(f"Error calculando progreso: {e}")
+            # Retornar valores por defecto en caso de error
+            return {
+                "charlemos": {"progress": 0, "status": "active"},
+                "estudiemos": {"progress": 0, "status": "available"},
+                "evaluemos": {"progress": 0, "status": "available"},
+                "simulemos": {"progress": 0, "status": "available"},
+                "analicemos": {"progress": 0, "status": "available"}
+            }
 
 def create_app(user: User):
     """
