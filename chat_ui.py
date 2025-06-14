@@ -821,6 +821,13 @@ class ChatUI:
                 "subtitle": "Simulacros completos en condiciones reales de examen",
                 "icon": ft.Icons.TIMER_OUTLINED,
                 "description": "Práctica completa del examen PMP en condiciones que replican el examen real con cronómetro y análisis post-examen."
+            },
+            {
+                "key": "analicemos",
+                "title": "ANALICEMOS CÓMO VAMOS",
+                "subtitle": "Dashboard de progreso y análisis de preparación",
+                "icon": ft.Icons.ANALYTICS_OUTLINED,
+                "description": "Vista comprehensiva del progreso de estudio, analytics predictivos y recomendaciones personalizadas."
             }
             # Aquí se pueden añadir más opciones en el futuro
         ]
@@ -900,6 +907,8 @@ class ChatUI:
                 self.update_evaluemos_mode()
             elif mode == "simulemos":
                 self.update_simulemos_mode()
+            elif mode == "analicemos":
+                self.update_analicemos_mode()
             
             # Reconstruir el layout
             if self.page:
@@ -1114,6 +1123,68 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
 • *"Examen completo"* - 180 preguntas, 230 minutos
 • *"Simulacro 60 minutos"* - Práctica de tiempo limitado
 • *"Solo Process Domain"* - Focus en área específica"""
+            
+            welcome_widget = create_chat_message(welcome_message, False)
+            self.chat_container.controls.append(welcome_widget)
+    
+    def update_analicemos_mode(self):
+        """
+        Actualiza la interfaz para el modo ANALICEMOS CÓMO VAMOS.
+        """
+        # Actualizar el placeholder del input
+        self.message_input.hint_text = "Ejemplo: 'Mostrar mi progreso' o 'Análisis de preparación' o 'Dashboard completo'"
+        
+        # Actualizar el estado si no hay chatbot inicializado
+        if not self.chatbot:
+            self.status_text.value = "📊 Modo ANALICEMOS CÓMO VAMOS - Dashboard de progreso y análisis de preparación"
+            self.status_text.color = ft.Colors.BLUE_600
+        
+        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
+        if self.chatbot and len(self.chat_container.controls) == 0:
+            welcome_message = """¡Bienvenido al modo **ANALICEMOS CÓMO VAMOS**! 📊
+
+Vista **comprehensiva del progreso de estudio** y preparación para el examen PMP con analytics predictivos y recomendaciones personalizadas.
+
+## 📈 **Overview General:**
+📊 **Readiness Score** - Porcentaje de preparación estimado
+🔥 **Study Streak** - Días consecutivos de estudio
+⏰ **Total Study Time** - Tiempo acumulado en la plataforma
+🎯 **Exam Countdown** - Días hasta fecha objetivo de examen
+
+## 🎯 **Progress por Área:**
+📚 **Visual Breakdown** - Dominios People/Process/Business Environment
+🗺️ **Heatmap de Conocimiento** - Verde=dominado, Amarillo=en progreso, Rojo=débil
+✅ **Completion Percentage** - Por cada área de conocimiento
+⏱️ **Time Invested** - Por área vs tiempo recomendado
+
+## 📊 **Performance Analytics:**
+📈 **Score Trends** - Gráfico de evolución de scores en el tiempo
+🎯 **Question Accuracy** - Porcentaje de aciertos por tipo de pregunta
+⚡ **Speed Analysis** - Tiempo promedio por pregunta vs objetivo
+📊 **Consistency Metrics** - Qué tan consistente es el performance
+
+## 🔍 **Study Patterns:**
+⏰ **Best Study Times** - Cuándo es más efectivo estudiando
+📚 **Session Effectiveness** - Correlación entre duración y retención
+💡 **Content Preferences** - Chat vs estudio estructurado vs evaluaciones
+🎯 **Weak Spot Patterns** - Patrones en errores comunes
+
+## 🔮 **Predictive Analytics:**
+🎯 **Exam Readiness Prediction** - Basado en todos los datos
+📋 **Recommended Study Plan** - Próximos pasos para mejorar score
+⏰ **Time to Readiness** - Estimación de cuándo estará listo
+⚠️ **Risk Assessment** - Probabilidad de fallar en áreas específicas
+
+## 💡 **Actionable Insights:**
+📚 **Study Recommendations** - "Enfócate en Risk Management esta semana"
+⏰ **Time Allocation** - "Dedica 60% más tiempo a Process domain"
+🎯 **Strategy Adjustments** - "Practica más simulacros completos"
+🎯 **Goal Setting** - Objetivos SMART para próxima semana/mes
+
+**¿Qué análisis te gustaría ver?**
+• *"Mostrar mi progreso"* - Dashboard completo de progreso
+• *"Análisis de preparación"* - Evaluación detallada de readiness
+• *"Recomendaciones de estudio"* - Plan personalizado de mejora"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
