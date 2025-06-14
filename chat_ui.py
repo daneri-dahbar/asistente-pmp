@@ -800,6 +800,13 @@ class ChatUI:
                 "subtitle": "Chat libre con tutor IA especializado en PMP",
                 "icon": ft.Icons.CHAT_BUBBLE_OUTLINE,
                 "description": "Conversación abierta donde puedes hacer cualquier pregunta sobre PMP sin estructura predefinida."
+            },
+            {
+                "key": "estudiemos",
+                "title": "ESTUDIEMOS UN TEMA",
+                "subtitle": "Estudio estructurado y guiado por áreas específicas",
+                "icon": ft.Icons.SCHOOL_OUTLINED,
+                "description": "Aprendizaje sistemático de temas específicos del PMBOK con sesiones guiadas y adaptativas."
             }
             # Aquí se pueden añadir más opciones en el futuro
         ]
@@ -867,10 +874,14 @@ class ChatUI:
                 self.chatbot = ChatBot(self.user.id, self.current_mode)
                 # Limpiar el chat para el nuevo modo
                 self.chat_container.controls.clear()
+                # Limpiar la sesión actual para que se cree una nueva cuando sea necesario
+                self.current_session = None
             
             # Actualizar la interfaz según el modo
             if mode == "charlemos":
                 self.update_charlemos_mode()
+            elif mode == "estudiemos":
+                self.update_estudiemos_mode()
             
             # Reconstruir el layout
             if self.page:
@@ -909,6 +920,59 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
 🔄 **Cambio libre**: Cambia de tema cuando quieras
 
 ¡Empecemos! ¿Qué te gustaría saber sobre PMP?"""
+            
+            welcome_widget = create_chat_message(welcome_message, False)
+            self.chat_container.controls.append(welcome_widget)
+    
+    def update_estudiemos_mode(self):
+        """
+        Actualiza la interfaz para el modo ESTUDIEMOS UN TEMA.
+        """
+        # Actualizar el placeholder del input
+        self.message_input.hint_text = "Ejemplo: 'Quiero estudiar Risk Management' o 'Necesito aprender Schedule Management'"
+        
+        # Actualizar el estado si no hay chatbot inicializado
+        if not self.chatbot:
+            self.status_text.value = "📚 Modo ESTUDIEMOS UN TEMA - Estudio estructurado y guiado por áreas específicas"
+            self.status_text.color = ft.Colors.BLUE_600
+        
+        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
+        if self.chatbot and len(self.chat_container.controls) == 0:
+            welcome_message = """¡Bienvenido al modo **ESTUDIEMOS UN TEMA**! 📚
+
+Aquí tendrás sesiones de estudio **estructuradas y adaptativas** para dominar cualquier área del PMBOK Guide.
+
+## 🎯 **Cómo funciona:**
+
+**1. Selecciona tu tema** - Dime qué área quieres estudiar
+**2. Configuramos la sesión** - Nivel, objetivos y tiempo disponible  
+**3. Sesión guiada** - Te guío paso a paso con metodología probada
+
+## 📚 **Áreas disponibles:**
+
+### **People Domain:**
+• Leadership & Team Management
+• Stakeholder Engagement
+
+### **Process Domain:**
+• Risk Management • Schedule Management
+• Cost Management • Quality Management  
+• Resource Management • Communications Management
+• Procurement Management • Scope Management
+• Integration Management
+
+### **Business Environment:**
+• Strategy & Governance
+• Compliance & Benefits Realization
+
+## ✨ **Características especiales:**
+🎓 **Ritmo personalizado** - Controlas la velocidad
+📝 **Checkpoints** - Verifico tu comprensión
+📌 **Note-taking** - Te sugiero puntos clave
+🔖 **Bookmarks** - Marcamos secciones importantes
+
+**¿Qué tema te gustaría estudiar hoy?** 
+Ejemplo: *"Quiero estudiar Risk Management"* o *"Necesito aprender Schedule Management"*"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
