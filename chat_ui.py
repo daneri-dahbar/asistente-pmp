@@ -814,6 +814,13 @@ class ChatUI:
                 "subtitle": "Evaluación diagnóstica y práctica dirigida",
                 "icon": ft.Icons.QUIZ_OUTLINED,
                 "description": "Identifica fortalezas y debilidades con evaluaciones adaptativas y práctica específica."
+            },
+            {
+                "key": "simulemos",
+                "title": "SIMULEMOS UN EXAMEN",
+                "subtitle": "Simulacros completos en condiciones reales de examen",
+                "icon": ft.Icons.TIMER_OUTLINED,
+                "description": "Práctica completa del examen PMP en condiciones que replican el examen real con cronómetro y análisis post-examen."
             }
             # Aquí se pueden añadir más opciones en el futuro
         ]
@@ -891,6 +898,8 @@ class ChatUI:
                 self.update_estudiemos_mode()
             elif mode == "evaluemos":
                 self.update_evaluemos_mode()
+            elif mode == "simulemos":
+                self.update_simulemos_mode()
             
             # Reconstruir el layout
             if self.page:
@@ -1046,6 +1055,65 @@ Identifica tus **fortalezas y debilidades** con evaluaciones adaptativas y prác
 • *"Diagnóstico completo"* - Assessment inicial completo
 • *"Evaluar Risk Management"* - Práctica por área específica  
 • *"Práctica por debilidades"* - Focus en áreas débiles"""
+            
+            welcome_widget = create_chat_message(welcome_message, False)
+            self.chat_container.controls.append(welcome_widget)
+    
+    def update_simulemos_mode(self):
+        """
+        Actualiza la interfaz para el modo SIMULEMOS UN EXAMEN.
+        """
+        # Actualizar el placeholder del input
+        self.message_input.hint_text = "Ejemplo: 'Examen completo' o 'Simulacro 60 minutos' o 'Solo Process Domain'"
+        
+        # Actualizar el estado si no hay chatbot inicializado
+        if not self.chatbot:
+            self.status_text.value = "⏱️ Modo SIMULEMOS UN EXAMEN - Simulacros completos en condiciones reales"
+            self.status_text.color = ft.Colors.BLUE_600
+        
+        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
+        if self.chatbot and len(self.chat_container.controls) == 0:
+            welcome_message = """¡Bienvenido al modo **SIMULEMOS UN EXAMEN**! ⏱️
+
+Práctica completa del examen PMP en **condiciones que replican el examen real** con cronómetro, navegación realista y análisis post-examen.
+
+## 🎯 **Tipos de Simulacro:**
+
+### **📋 Examen Completo:**
+• **180 preguntas** - Duración real 230 minutos (3h 50min)
+• **Distribución oficial** - People (42%), Process (50%), Business Environment (8%)
+• **Break opcional** - 10 minutos en la mitad (como examen real)
+• **Ambiente controlado** - Sin pausas, cronómetro visible
+
+### **⏰ Simulacro por Tiempo:**
+• **30 minutos** - 23 preguntas (práctica rápida)
+• **60 minutos** - 47 preguntas (sesión media)
+• **90 minutos** - 70 preguntas (práctica extendida)
+• **Útil** cuando no tienes tiempo completo
+
+### **🎯 Simulacro por Dominio:**
+• **Solo People** - 76 preguntas, tiempo proporcional
+• **Solo Process** - 90 preguntas, tiempo proporcional  
+• **Solo Business Environment** - 14 preguntas, tiempo proporcional
+
+## ✨ **Características Durante el Examen:**
+⏱️ **Timer prominente** - Cuenta regresiva siempre visible
+🗺️ **Question navigator** - Overview de progreso, preguntas marcadas
+📌 **Mark for review** - Sistema de marcado como examen real
+🚫 **No feedback** - Sin respuestas correctas hasta terminar
+💾 **Auto-save** - Guarda progreso automáticamente
+
+## 📊 **Post-Examen Analysis:**
+📈 **Score breakdown** - Por dominio y área de conocimiento
+⏰ **Time analysis** - Tiempo por pregunta, identificar ritmo
+🔍 **Question review** - Revisar todas las preguntas con explicaciones
+🎯 **Weak areas identification** - Qué estudiar antes del siguiente simulacro
+✅ **Readiness assessment** - Predicción de probabilidad de aprobar examen real
+
+**¿Qué tipo de simulacro prefieres?**
+• *"Examen completo"* - 180 preguntas, 230 minutos
+• *"Simulacro 60 minutos"* - Práctica de tiempo limitado
+• *"Solo Process Domain"* - Focus en área específica"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
