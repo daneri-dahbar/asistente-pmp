@@ -114,7 +114,6 @@ class ChatUI:
         self.is_sending = False
         self.page = None
         self.sidebar_visible = True
-        self.nav_menu_visible = True
     
     def initialize_chatbot(self, page: ft.Page):
         """
@@ -715,7 +714,7 @@ class ChatUI:
     
     def create_navigation_menu(self):
         """
-        Crea el menú de navegación lateral izquierdo.
+        Crea el menú de navegación para el sidebar integrado.
         """
         menu_items = [
             {
@@ -734,45 +733,40 @@ class ChatUI:
             is_selected = self.current_mode == item["key"]
             
             menu_item = ft.Container(
-                content=ft.Column(
+                content=ft.Row(
                     controls=[
-                        ft.Row(
+                        ft.Icon(
+                            item["icon"],
+                            color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700,
+                            size=18
+                        ),
+                        ft.Column(
                             controls=[
-                                ft.Icon(
-                                    item["icon"],
-                                    color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700,
-                                    size=20
+                                ft.Text(
+                                    item["title"],
+                                    size=13,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700
                                 ),
-                                ft.Column(
-                                    controls=[
-                                        ft.Text(
-                                            item["title"],
-                                            size=14,
-                                            weight=ft.FontWeight.BOLD,
-                                            color=ft.Colors.WHITE if is_selected else ft.Colors.BLUE_700
-                                        ),
-                                        ft.Text(
-                                            item["subtitle"],
-                                            size=11,
-                                            color=ft.Colors.WHITE70 if is_selected else ft.Colors.BLUE_600,
-                                            max_lines=2,
-                                            overflow=ft.TextOverflow.ELLIPSIS
-                                        )
-                                    ],
-                                    spacing=2,
-                                    expand=True
+                                ft.Text(
+                                    item["subtitle"],
+                                    size=10,
+                                    color=ft.Colors.WHITE70 if is_selected else ft.Colors.BLUE_600,
+                                    max_lines=2,
+                                    overflow=ft.TextOverflow.ELLIPSIS
                                 )
                             ],
-                            spacing=10,
-                            alignment=ft.MainAxisAlignment.START
+                            spacing=2,
+                            expand=True
                         )
                     ],
-                    spacing=5
+                    spacing=8,
+                    alignment=ft.MainAxisAlignment.START
                 ),
-                padding=ft.padding.all(12),
-                margin=ft.margin.only(bottom=5),
+                padding=ft.padding.all(10),
+                margin=ft.margin.only(bottom=3),
                 bgcolor=ft.Colors.BLUE_700 if is_selected else ft.Colors.TRANSPARENT,
-                border_radius=8,
+                border_radius=6,
                 on_click=lambda e, mode=item["key"]: self.switch_mode(mode),
                 ink=True
             )
@@ -781,7 +775,7 @@ class ChatUI:
         
         return ft.Column(
             controls=menu_controls,
-            spacing=5
+            spacing=3
         )
     
     def switch_mode(self, mode: str):
@@ -842,20 +836,9 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
     
-    def toggle_nav_menu(self, e):
-        """
-        Alterna la visibilidad del menú de navegación.
-        """
-        self.nav_menu_visible = not self.nav_menu_visible
-        if self.page:
-            content = self.build_layout()
-            main_layout = self.page.controls[0]
-            main_layout.controls[1] = content
-            self.page.update()
-    
     def build_layout(self):
         """
-        Construye el layout principal con menú de navegación, sidebar de conversaciones y área de chat.
+        Construye el layout principal con sidebar integrado (modos + conversaciones) y área de chat.
         """
         # Área de chat principal
         chat_area = ft.Container(
@@ -903,15 +886,15 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
             expand=True
         )
         
-        # Construir el layout según la visibilidad de los paneles
+        # Construir el layout según la visibilidad del sidebar
         layout_controls = []
         
-        # Menú de navegación (siempre visible por ahora, pero preparado para toggle)
-        if self.nav_menu_visible:
-            nav_menu = ft.Container(
+        # Sidebar integrado (modos + conversaciones)
+        if self.sidebar_visible:
+            integrated_sidebar = ft.Container(
                 content=ft.Column(
                     controls=[
-                        # Header del menú de navegación
+                        # Header del sidebar
                         ft.Container(
                             content=ft.Row(
                                 controls=[
@@ -927,63 +910,68 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
                             padding=ft.padding.all(15),
                             bgcolor=ft.Colors.BLUE_800
                         ),
-                        # Menú de navegación
+                        
+                        # Sección de Modos
                         ft.Container(
-                            content=self.create_navigation_menu(),
+                            content=ft.Column(
+                                controls=[
+                                    ft.Text(
+                                        "MODOS",
+                                        size=12,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=ft.Colors.BLUE_800
+                                    ),
+                                    self.create_navigation_menu()
+                                ],
+                                spacing=10
+                            ),
+                            padding=ft.padding.all(15),
+                            bgcolor=ft.Colors.BLUE_50
+                        ),
+                        
+                        # Divider entre secciones
+                        ft.Divider(height=1, color=ft.Colors.BLUE_200),
+                        
+                        # Sección de Conversaciones
+                        ft.Container(
+                            content=ft.Column(
+                                controls=[
+                                    ft.Row(
+                                        controls=[
+                                            ft.Text(
+                                                "CONVERSACIONES",
+                                                size=12,
+                                                weight=ft.FontWeight.BOLD,
+                                                color=ft.Colors.BLUE_700
+                                            ),
+                                            ft.IconButton(
+                                                icon=ft.Icons.ADD,
+                                                tooltip="Nueva conversación",
+                                                icon_color=ft.Colors.BLUE_700,
+                                                icon_size=16,
+                                                on_click=self.new_conversation
+                                            )
+                                        ],
+                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                                    ),
+                                    ft.Container(
+                                        content=self.conversations_list,
+                                        expand=True
+                                    )
+                                ],
+                                spacing=5
+                            ),
                             padding=ft.padding.all(15),
                             expand=True
                         )
                     ],
                     spacing=0
                 ),
-                width=300,
-                bgcolor=ft.Colors.BLUE_50,
-                border=ft.border.only(right=ft.BorderSide(1, ft.Colors.BLUE_200))
-            )
-            layout_controls.append(nav_menu)
-        
-        # Sidebar de conversaciones
-        if self.sidebar_visible:
-            conversations_sidebar = ft.Container(
-                content=ft.Column(
-                    controls=[
-                        # Header del sidebar
-                        ft.Container(
-                            content=ft.Row(
-                                controls=[
-                                    ft.Text(
-                                        "Conversaciones",
-                                        size=14,
-                                        weight=ft.FontWeight.BOLD,
-                                        color=ft.Colors.WHITE
-                                    ),
-                                    ft.IconButton(
-                                        icon=ft.Icons.ADD,
-                                        tooltip="Nueva conversación",
-                                        icon_color=ft.Colors.WHITE,
-                                        icon_size=18,
-                                        on_click=self.new_conversation
-                                    )
-                                ],
-                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                            ),
-                            padding=ft.padding.all(12),
-                            bgcolor=ft.Colors.BLUE_700
-                        ),
-                        # Lista de conversaciones
-                        ft.Container(
-                            content=self.conversations_list,
-                            padding=ft.padding.all(10),
-                            expand=True
-                        )
-                    ],
-                    spacing=0
-                ),
-                width=280,
+                width=320,
                 bgcolor=ft.Colors.GREY_50,
                 border=ft.border.only(right=ft.BorderSide(1, ft.Colors.GREY_300))
             )
-            layout_controls.append(conversations_sidebar)
+            layout_controls.append(integrated_sidebar)
         
         # Área principal de chat
         layout_controls.append(main_chat_area)
@@ -1014,14 +1002,8 @@ Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Al
                     ft.Row(
                         controls=[
                             ft.IconButton(
-                                icon=ft.Icons.APPS,
-                                tooltip="Alternar menú de navegación",
-                                icon_color=ft.Colors.WHITE,
-                                on_click=self.toggle_nav_menu
-                            ),
-                            ft.IconButton(
                                 icon=ft.Icons.MENU,
-                                tooltip="Alternar conversaciones",
+                                tooltip="Alternar sidebar",
                                 icon_color=ft.Colors.WHITE,
                                 on_click=self.toggle_sidebar
                             ),
