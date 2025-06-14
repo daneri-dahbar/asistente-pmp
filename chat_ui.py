@@ -40,7 +40,6 @@ def create_chat_message(message: str, is_user: bool):
             color=text_color,
             size=14,
             selectable=True,
-            width=None,  # Permitir que se ajuste al contenido
             no_wrap=False  # Permitir salto de línea
         )
     else:
@@ -57,29 +56,25 @@ def create_chat_message(message: str, is_user: bool):
             on_tap_link=lambda e: print(f"Link clicked: {e.data}")
         )
     
+    # Crear el contenedor del mensaje
+    message_container = ft.Container(
+        content=message_content,
+        padding=ft.padding.all(12),
+        margin=margin,
+        bgcolor=bg_color,
+        border_radius=border_radius,
+        shadow=ft.BoxShadow(
+            spread_radius=0,
+            blur_radius=4,
+            color=ft.Colors.BLACK12,
+            offset=ft.Offset(0, 2)
+        ),
+        expand=False,
+        width=None  # Se ajusta al contenido
+    )
+    
     return ft.Row(
-        controls=[
-            ft.Container(
-                content=message_content,
-                padding=ft.padding.all(12),
-                margin=margin,
-                bgcolor=bg_color,
-                border_radius=border_radius,
-                shadow=ft.BoxShadow(
-                    spread_radius=0,
-                    blur_radius=4,
-                    color=ft.Colors.BLACK12,
-                    offset=ft.Offset(0, 2)
-                ),
-                # Hacer que el contenedor sea responsivo
-                expand=False,
-                width=None,  # Se ajusta al contenido
-                constraints=ft.BoxConstraints(
-                    max_width=600,  # Ancho máximo para evitar líneas muy largas
-                    min_width=100   # Ancho mínimo
-                )
-            )
-        ],
+        controls=[message_container],
         alignment=alignment,
         wrap=False
     )
