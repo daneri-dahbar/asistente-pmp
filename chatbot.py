@@ -543,7 +543,7 @@ Responde siempre en español con un enfoque analítico, honesto y basado en dato
         Args:
             name (str): Nombre para la nueva conversación
         """
-        self.current_session = self.db_manager.create_chat_session(self.user_id, name)
+        self.current_session = self.db_manager.create_chat_session(self.user_id, name, self.mode)
         self.conversation_history = []
     
     def is_api_key_valid(self) -> bool:

@@ -6,6 +6,7 @@ Agrega las tablas de usuarios y actualiza la estructura de chat_sessions.
 import sqlite3
 import os
 from pathlib import Path
+from datetime import datetime
 
 def backup_database():
     """Crea una copia de seguridad de la base de datos actual"""
@@ -19,13 +20,19 @@ def backup_database():
     return False
 
 def migrate_database():
-    """Migra la base de datos a la nueva estructura con usuarios"""
+    """
+    Migra la base de datos para agregar los nuevos campos.
+    """
     db_path = "chat_history.db"
     
+    if not os.path.exists(db_path):
+        print("Base de datos no encontrada. Se creará automáticamente con los nuevos campos.")
+        return
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
         print("🔄 Iniciando migración de base de datos...")
         
         # Verificar si la tabla users ya existe
@@ -97,6 +104,29 @@ def migrate_database():
         else:
             print("ℹ️  Columna user_id ya existe en chat_sessions")
         
+        # Verificar si las columnas ya existen
+        cursor.execute("PRAGMA table_info(chat_sessions)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        # Agregar columna mode si no existe
+        if 'mode' not in columns:
+            print("Agregando columna 'mode' a chat_sessions...")
+            cursor.execute("ALTER TABLE chat_sessions ADD COLUMN mode VARCHAR(50) DEFAULT 'charlemos'")
+            print("✅ Columna 'mode' agregada exitosamente")
+        else:
+            print("✅ Columna 'mode' ya existe")
+        
+        # Agregar columna last_used_at si no existe
+        if 'last_used_at' not in columns:
+            print("Agregando columna 'last_used_at' a chat_sessions...")
+            cursor.execute("ALTER TABLE chat_sessions ADD COLUMN last_used_at DATETIME")
+            
+            # Inicializar last_used_at con created_at para sesiones existentes
+            cursor.execute("UPDATE chat_sessions SET last_used_at = created_at WHERE last_used_at IS NULL")
+            print("✅ Columna 'last_used_at' agregada exitosamente")
+        else:
+            print("✅ Columna 'last_used_at' ya existe")
+        
         # Confirmar cambios
         conn.commit()
         print("✅ Migración completada exitosamente")
@@ -116,12 +146,12 @@ def migrate_database():
         print(f"   💬 Sesiones de chat: {session_count}")
         print(f"   📝 Mensajes: {message_count}")
         
-        conn.close()
         return True
         
     except Exception as e:
         print(f"❌ Error durante la migración: {e}")
         conn.rollback()
+    finally:
         conn.close()
         return False
 

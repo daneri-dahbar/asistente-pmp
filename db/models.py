@@ -28,6 +28,15 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
     
+    # Campos adicionales del perfil
+    full_name = Column(String(100), nullable=True)
+    phone = Column(String(20), nullable=True)
+    company = Column(String(100), nullable=True)
+    position = Column(String(100), nullable=True)
+    experience_years = Column(Integer, nullable=True)
+    target_exam_date = Column(String(20), nullable=True)  # Formato DD/MM/YYYY
+    study_hours_daily = Column(Integer, nullable=True)
+    
     # Relación con las sesiones de chat
     chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
     
@@ -55,7 +64,9 @@ class ChatSession(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     name = Column(String(255), default="Nueva Conversación")
+    mode = Column(String(50), default="charlemos")  # Modo de la conversación
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, default=datetime.utcnow)  # Última vez que se usó
     
     # Relaciones
     user = relationship("User", back_populates="chat_sessions")
@@ -126,10 +137,10 @@ class DatabaseManager:
         with self.get_session() as db:
             return db.query(User).filter(User.id == user_id).first()
     
-    def create_chat_session(self, user_id: int, name: str = "Nueva Conversación") -> ChatSession:
+    def create_chat_session(self, user_id: int, name: str = "Nueva Conversación", mode: str = "charlemos") -> ChatSession:
         """Crea una nueva sesión de chat para un usuario"""
         with self.get_session() as db:
-            session = ChatSession(user_id=user_id, name=name)
+            session = ChatSession(user_id=user_id, name=name, mode=mode)
             db.add(session)
             db.commit()
             db.refresh(session)
@@ -145,12 +156,15 @@ class DatabaseManager:
                 session = self.create_chat_session(user_id)
             return session
     
-    def get_user_sessions(self, user_id: int) -> list:
-        """Obtiene todas las sesiones de un usuario"""
+    def get_user_sessions(self, user_id: int, mode: str = None) -> list:
+        """Obtiene todas las sesiones de un usuario, opcionalmente filtradas por modo"""
         with self.get_session() as db:
-            sessions = db.query(ChatSession).filter(
-                ChatSession.user_id == user_id
-            ).order_by(ChatSession.created_at.desc()).all()
+            query = db.query(ChatSession).filter(ChatSession.user_id == user_id)
+            
+            if mode:
+                query = query.filter(ChatSession.mode == mode)
+            
+            sessions = query.order_by(ChatSession.last_used_at.desc()).all()
             return sessions
     
     def add_message(self, session_id: int, role: str, content: str):
@@ -162,6 +176,12 @@ class DatabaseManager:
                 content=content
             )
             db.add(message)
+            
+            # Actualizar la fecha de último uso de la sesión
+            session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if session:
+                session.last_used_at = datetime.utcnow()
+            
             db.commit()
     
     def get_session_messages(self, session_id: int) -> list:
