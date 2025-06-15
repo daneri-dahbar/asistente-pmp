@@ -2043,24 +2043,48 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         """
         Muestra el diálogo de perfil y configuración del usuario.
         """
+        print(f"DEBUG: show_user_profile_dialog llamado")
+        print(f"DEBUG: self.page = {self.page}")
+        print(f"DEBUG: self.user = {self.user}")
+        
+        if not self.page:
+            print("ERROR: self.page es None")
+            return
+            
+        # Crear un diálogo muy simple para probar
+        simple_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Test Dialog"),
+            content=ft.Text("¿Puedes ver este diálogo?"),
+            actions=[
+                ft.TextButton("Sí", on_click=lambda e: self.close_simple_dialog()),
+                ft.TextButton("No", on_click=lambda e: self.close_simple_dialog())
+            ]
+        )
+        
+        print("DEBUG: Creando diálogo simple...")
+        self.page.dialog = simple_dialog
+        simple_dialog.open = True
+        print("DEBUG: Llamando page.update()...")
+        self.page.update()
+        print("DEBUG: page.update() completado")
+    
+    def close_simple_dialog(self):
+        if self.page and self.page.dialog:
+            self.page.dialog.open = False
+            self.page.update()
+    
+    def show_full_profile_dialog(self, e):
+        """
+        Muestra el diálogo completo de perfil de usuario.
+        """
         def close_dialog(e):
             profile_dialog.open = False
             self.page.update()
         
         def save_profile(e):
-            # Validar campos
-            if not username_field.value.strip():
-                username_field.error_text = "El nombre de usuario no puede estar vacío"
-                self.page.update()
-                return
-            
-            if not email_field.value.strip():
-                email_field.error_text = "El email no puede estar vacío"
-                self.page.update()
-                return
-            
             try:
-                # Actualizar datos del usuario en la base de datos
+                # Actualizar datos básicos
                 from db.database import DatabaseManager
                 db_manager = DatabaseManager()
                 
@@ -2071,37 +2095,28 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
                     if user:
                         user.username = username_field.value.strip()
                         user.email = email_field.value.strip()
+                        user.full_name = full_name_field.value.strip() if full_name_field.value else None
+                        user.phone = phone_field.value.strip() if phone_field.value else None
+                        user.company = company_field.value.strip() if company_field.value else None
+                        user.position = position_field.value.strip() if position_field.value else None
                         
-                        # Actualizar campos opcionales si están presentes
-                        if hasattr(user, 'full_name'):
-                            user.full_name = full_name_field.value.strip() if full_name_field.value else None
-                        if hasattr(user, 'phone'):
-                            user.phone = phone_field.value.strip() if phone_field.value else None
-                        if hasattr(user, 'company'):
-                            user.company = company_field.value.strip() if company_field.value else None
-                        if hasattr(user, 'position'):
-                            user.position = position_field.value.strip() if position_field.value else None
-                        if hasattr(user, 'experience_years'):
-                            try:
-                                user.experience_years = int(experience_field.value) if experience_field.value else None
-                            except ValueError:
-                                pass
-                        if hasattr(user, 'target_exam_date'):
-                            user.target_exam_date = target_date_field.value.strip() if target_date_field.value else None
-                        if hasattr(user, 'study_hours_daily'):
-                            try:
-                                user.study_hours_daily = int(study_hours_field.value) if study_hours_field.value else None
-                            except ValueError:
-                                pass
+                        try:
+                            user.experience_years = int(experience_field.value) if experience_field.value else None
+                        except ValueError:
+                            user.experience_years = None
+                            
+                        user.target_exam_date = target_date_field.value.strip() if target_date_field.value else None
+                        
+                        try:
+                            user.study_hours_daily = int(study_hours_field.value) if study_hours_field.value else None
+                        except ValueError:
+                            user.study_hours_daily = None
                         
                         db.commit()
                         
-                        # Actualizar objeto usuario local
+                        # Actualizar objeto local
                         self.user.username = user.username
                         self.user.email = user.email
-                        
-                        # Actualizar header con nuevo nombre
-                        self.rebuild_ui()
                         
                         # Mostrar mensaje de éxito
                         snack_bar = ft.SnackBar(
@@ -2115,144 +2130,50 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
                         close_dialog(e)
                         
             except Exception as error:
-                # Mostrar mensaje de error
+                print(f"Error al actualizar perfil: {error}")
                 snack_bar = ft.SnackBar(
-                    content=ft.Text(f"❌ Error al actualizar perfil: {str(error)}"),
+                    content=ft.Text(f"❌ Error: {str(error)}"),
                     bgcolor=ft.Colors.RED_600
                 )
                 self.page.overlay.append(snack_bar)
                 snack_bar.open = True
                 self.page.update()
         
-        def change_password(e):
-            # Función para cambiar contraseña (implementar más tarde)
-            snack_bar = ft.SnackBar(
-                content=ft.Text("🔧 Función de cambio de contraseña en desarrollo"),
-                bgcolor=ft.Colors.ORANGE_600
-            )
-            self.page.overlay.append(snack_bar)
-            snack_bar.open = True
-            self.page.update()
-        
         # Campos del formulario
-        username_field = ft.TextField(
-            label="Nombre de usuario",
-            value=self.user.username,
-            prefix_icon=ft.Icons.PERSON,
-            width=300
-        )
-        
-        email_field = ft.TextField(
-            label="Email",
-            value=self.user.email,
-            prefix_icon=ft.Icons.EMAIL,
-            width=300
-        )
-        
-        full_name_field = ft.TextField(
-            label="Nombre completo",
-            value=getattr(self.user, 'full_name', '') or '',
-            prefix_icon=ft.Icons.BADGE,
-            width=300
-        )
-        
-        phone_field = ft.TextField(
-            label="Teléfono",
-            value=getattr(self.user, 'phone', '') or '',
-            prefix_icon=ft.Icons.PHONE,
-            width=300
-        )
-        
-        company_field = ft.TextField(
-            label="Empresa",
-            value=getattr(self.user, 'company', '') or '',
-            prefix_icon=ft.Icons.BUSINESS,
-            width=300
-        )
-        
-        position_field = ft.TextField(
-            label="Cargo/Posición",
-            value=getattr(self.user, 'position', '') or '',
-            prefix_icon=ft.Icons.WORK,
-            width=300
-        )
-        
-        experience_field = ft.TextField(
-            label="Años de experiencia en PM",
-            value=str(getattr(self.user, 'experience_years', '') or ''),
-            prefix_icon=ft.Icons.TIMELINE,
-            width=300,
-            keyboard_type=ft.KeyboardType.NUMBER
-        )
-        
-        target_date_field = ft.TextField(
-            label="Fecha objetivo del examen PMP",
-            value=getattr(self.user, 'target_exam_date', '') or '',
-            prefix_icon=ft.Icons.CALENDAR_TODAY,
-            width=300,
-            hint_text="DD/MM/YYYY"
-        )
-        
-        study_hours_field = ft.TextField(
-            label="Horas de estudio diarias",
-            value=str(getattr(self.user, 'study_hours_daily', '') or ''),
-            prefix_icon=ft.Icons.SCHEDULE,
-            width=300,
-            keyboard_type=ft.KeyboardType.NUMBER,
-            hint_text="2-4 horas recomendadas"
-        )
-        
-        # Contenido del diálogo
-        profile_content = ft.Column(
-            controls=[
-                ft.Text("👤 Perfil de Usuario", size=20, weight=ft.FontWeight.BOLD),
-                ft.Divider(),
-                
-                ft.Text("📋 Información Básica", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
-                username_field,
-                email_field,
-                full_name_field,
-                phone_field,
-                
-                ft.Divider(),
-                ft.Text("💼 Información Profesional", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                company_field,
-                position_field,
-                experience_field,
-                
-                ft.Divider(),
-                ft.Text("🎯 Objetivos de Estudio PMP", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700),
-                target_date_field,
-                study_hours_field,
-                
-                ft.Divider(),
-                ft.Row(
-                    controls=[
-                        ft.TextButton("Cancelar", on_click=close_dialog),
-                        ft.ElevatedButton("Cambiar Contraseña", on_click=change_password, icon=ft.Icons.LOCK),
-                        ft.ElevatedButton("Guardar Cambios", on_click=save_profile, icon=ft.Icons.SAVE)
-                    ],
-                    alignment=ft.MainAxisAlignment.END,
-                    spacing=10
-                )
-            ],
-            spacing=15,
-            scroll=ft.ScrollMode.AUTO,
-            height=500
-        )
+        username_field = ft.TextField(label="Nombre de usuario", value=self.user.username, width=300)
+        email_field = ft.TextField(label="Email", value=self.user.email, width=300)
+        full_name_field = ft.TextField(label="Nombre completo", value=getattr(self.user, 'full_name', '') or '', width=300)
+        phone_field = ft.TextField(label="Teléfono", value=getattr(self.user, 'phone', '') or '', width=300)
+        company_field = ft.TextField(label="Empresa", value=getattr(self.user, 'company', '') or '', width=300)
+        position_field = ft.TextField(label="Cargo", value=getattr(self.user, 'position', '') or '', width=300)
+        experience_field = ft.TextField(label="Años experiencia PM", value=str(getattr(self.user, 'experience_years', '') or ''), width=300)
+        target_date_field = ft.TextField(label="Fecha objetivo examen", value=getattr(self.user, 'target_exam_date', '') or '', width=300)
+        study_hours_field = ft.TextField(label="Horas estudio diarias", value=str(getattr(self.user, 'study_hours_daily', '') or ''), width=300)
         
         # Crear diálogo
         profile_dialog = ft.AlertDialog(
             modal=True,
-            title=ft.Row(
+            title=ft.Text("👤 Gestión de Perfil"),
+            content=ft.Column(
                 controls=[
-                    ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE_600),
-                    ft.Text("Gestión de Perfil", weight=ft.FontWeight.BOLD)
+                    username_field,
+                    email_field,
+                    full_name_field,
+                    phone_field,
+                    company_field,
+                    position_field,
+                    experience_field,
+                    target_date_field,
+                    study_hours_field
                 ],
-                spacing=10
+                spacing=10,
+                scroll=ft.ScrollMode.AUTO,
+                height=400
             ),
-            content=profile_content,
-            actions_alignment=ft.MainAxisAlignment.END
+            actions=[
+                ft.TextButton("Cancelar", on_click=close_dialog),
+                ft.ElevatedButton("Guardar", on_click=save_profile)
+            ]
         )
         
         self.page.dialog = profile_dialog
