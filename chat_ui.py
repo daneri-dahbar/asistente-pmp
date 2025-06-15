@@ -153,7 +153,8 @@ class ChatUI:
             filled=True,
             border_radius=25,
             content_padding=ft.padding.symmetric(15, 10),
-            on_submit=self.send_message
+            on_submit=self.send_message,
+            autofocus=False  # No hacer autofocus por defecto
         )
         
         # Botón de envío
@@ -1335,6 +1336,19 @@ Análisis profundo de casos prácticos
         if self.current_mode != mode:
             self.current_mode = mode
             
+            # Recrear el message_input con autofocus para el nuevo modo
+            self.message_input = ft.TextField(
+                hint_text="Escribe tu mensaje aquí...",
+                multiline=True,
+                min_lines=1,
+                max_lines=5,
+                filled=True,
+                border_radius=25,
+                content_padding=ft.padding.symmetric(15, 10),
+                on_submit=self.send_message,
+                autofocus=True  # Hacer autofocus cuando se activa un modo
+            )
+            
             # Inicializar el chatbot con el nuevo modo
             self.chatbot = ChatBot(self.user.id, self.current_mode)
             # Limpiar el chat para el nuevo modo
@@ -2035,11 +2049,8 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         # Inicializar chatbot
         self.initialize_chatbot(page)
         
-        # Configurar modo inicial
-        self.update_charlemos_mode()
-        
-        # Enfocar el campo de entrada
-        self.message_input.focus()
+        # Configurar modo inicial (sin modo activo al inicio)
+        # self.update_charlemos_mode()  # Comentado para no activar modo por defecto
     
     def show_user_profile_dialog(self, e):
         """
@@ -2327,6 +2338,8 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         
         if self.page:
             self.page.update()
+            
+            # El focus se manejará automáticamente cuando sea necesario
     
 
     
