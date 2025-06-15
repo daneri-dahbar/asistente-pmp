@@ -125,7 +125,7 @@ class ChatUI:
         self.sessions_list = []
         
         # Estado de navegación
-        self.current_mode = "charlemos"  # Modo actual: charlemos, etc.
+        self.current_mode = None  # Modo actual: no iniciamos con ningún modo específico
         
         # Contenedores principales
         self.chat_container = ft.Column(
@@ -188,23 +188,26 @@ class ChatUI:
         
         def init_bot():
             try:
-                self.chatbot = ChatBot(self.user.id, self.current_mode)
-                if self.chatbot.is_api_key_valid():
-                    self.status_text.value = f"✅ Conectado como {self.user.username} - Modo CHARLEMOS activo"
-                    self.status_text.color = ft.Colors.GREEN_600
-                    
-                    # Establecer sesión actual
-                    self.current_session = self.chatbot.current_session
-                    
-                    # Cargar historial existente
-                    self.load_conversation_history()
-                    
-                    # Si no hay mensajes, mostrar bienvenida del modo CHARLEMOS
-                    if len(self.chat_container.controls) == 0:
-                        self.update_charlemos_mode()
+                # Solo inicializar chatbot si hay un modo seleccionado
+                if self.current_mode:
+                    self.chatbot = ChatBot(self.user.id, self.current_mode)
+                    if self.chatbot.is_api_key_valid():
+                        self.status_text.value = f"✅ Conectado como {self.user.username}"
+                        self.status_text.color = ft.Colors.GREEN_600
+                        
+                        # Establecer sesión actual
+                        self.current_session = self.chatbot.current_session
+                        
+                        # Cargar historial existente
+                        self.load_conversation_history()
+                    else:
+                        self.status_text.value = "❌ API Key no configurada"
+                        self.status_text.color = ft.Colors.RED_600
                 else:
-                    self.status_text.value = "❌ API Key no configurada"
-                    self.status_text.color = ft.Colors.RED_600
+                    # Sin modo seleccionado, mostrar mensaje de bienvenida general
+                    self.status_text.value = f"✅ Conectado como {self.user.username} - Selecciona un modo para comenzar"
+                    self.status_text.color = ft.Colors.GREEN_600
+                    self.show_welcome_screen()
                     
             except Exception as e:
                 self.status_text.value = f"❌ Error: {str(e)}"
@@ -213,6 +216,61 @@ class ChatUI:
             page.update()
         
         threading.Thread(target=init_bot, daemon=True).start()
+    
+    def show_welcome_screen(self):
+        """
+        Muestra una pantalla de bienvenida general sin seleccionar ningún modo específico.
+        """
+        welcome_message = """¡Bienvenido al **Asistente PMP**! 👋
+
+Soy tu tutor personal de IA especializado en **Project Management Professional (PMP)**. 
+
+## 🎯 **Modos Disponibles:**
+
+### **💬 CHARLEMOS** 
+Chat libre y conversacional sobre cualquier tema PMP
+- Preguntas abiertas y clarificaciones
+- Explicaciones con analogías y ejemplos
+- Discusión flexible de conceptos
+
+### **📚 ESTUDIEMOS UN TEMA**
+Sesiones de estudio estructuradas y guiadas
+- Estudio por áreas específicas del PMBOK
+- Metodología adaptativa según tu nivel
+- Checkpoints y verificación de comprensión
+
+### **📊 EVALUEMOS TU CONOCIMIENTO**
+Evaluación diagnóstica y práctica dirigida
+- Assessment completo de conocimientos
+- Práctica por áreas débiles
+- Feedback detallado con explicaciones
+
+### **⏱️ SIMULEMOS UN EXAMEN**
+Simulacros completos en condiciones reales
+- Exámenes de práctica cronometrados
+- Ambiente que replica el examen oficial
+- Análisis post-examen detallado
+
+### **🔍 ANALICEMOS CASOS**
+Análisis profundo de casos prácticos
+- Escenarios reales de gestión de proyectos
+- Aplicación práctica de frameworks
+- Desarrollo de pensamiento crítico
+
+## ✨ **Para comenzar:**
+**Selecciona un modo** usando el menú de navegación lateral o simplemente escribe qué tipo de ayuda necesitas.
+
+¿Qué te gustaría hacer hoy?"""
+        
+        welcome_widget = create_chat_message(welcome_message, False)
+        self.chat_container.controls.clear()
+        self.chat_container.controls.append(welcome_widget)
+        
+        # Actualizar placeholder del input
+        self.message_input.hint_text = "Selecciona un modo de estudio o simplemente escribe qué necesitas..."
+        
+        if self.page:
+            self.page.update()
     
     def load_conversation_history(self):
         """
@@ -661,6 +719,11 @@ class ChatUI:
         if self.is_sending or not self.message_input.value.strip():
             return
         
+        # Si no hay modo seleccionado, mostrar mensaje informativo
+        if not self.current_mode:
+            self.show_error_message("Por favor selecciona un modo de estudio usando el menú de navegación lateral antes de enviar mensajes.")
+            return
+        
         if not self.chatbot or not self.chatbot.is_api_key_valid():
             self.show_error_message("Por favor configura tu API Key de OpenAI")
             return
@@ -763,10 +826,26 @@ class ChatUI:
         """
         Inicia una nueva conversación.
         """
+        if not self.current_mode:
+            self.show_error_message("Por favor selecciona un modo de estudio antes de crear una nueva conversación.")
+            return
+            
         if self.chatbot:
             self.chatbot.start_new_conversation()
             self.current_session = self.chatbot.current_session
             self.chat_container.controls.clear()
+            
+            # Mostrar mensaje de bienvenida según el modo
+            if self.current_mode == "charlemos":
+                self.update_charlemos_mode()
+            elif self.current_mode == "estudiemos":
+                self.update_estudiemos_mode()
+            elif self.current_mode == "evaluemos":
+                self.update_evaluemos_mode()
+            elif self.current_mode == "simulemos":
+                self.update_simulemos_mode()
+            elif self.current_mode == "analicemos":
+                self.update_analicemos_mode()
             
             # Recargar lista de conversaciones
             self.load_conversations_list()
@@ -1055,62 +1134,7 @@ class ChatUI:
             
             menu_controls.append(tab_content)
         
-        # Agregar sección de configuración rápida
-        divider_color = ft.Colors.GREY_600 if is_dark_mode else ft.Colors.GREY_300
-        quick_text_color = ft.Colors.GREY_400 if is_dark_mode else ft.Colors.GREY_600
-        quick_icon_color = ft.Colors.GREY_300 if is_dark_mode else ft.Colors.GREY_700
-        
-        quick_actions = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Divider(height=1, color=divider_color),
-                    ft.Text(
-                        "ACCESO RÁPIDO",
-                        size=11,
-                        weight=ft.FontWeight.BOLD,
-                        color=quick_text_color
-                    ),
-                    ft.Row(
-                        controls=[
-                            ft.IconButton(
-                                icon=ft.Icons.SETTINGS,
-                                icon_size=18,
-                                icon_color=quick_icon_color,
-                                tooltip="Configuración",
-                                on_click=self.show_settings_dialog
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.NOTIFICATIONS,
-                                icon_size=18,
-                                icon_color=quick_icon_color,
-                                tooltip="Notificaciones",
-                                on_click=self.show_notifications_dialog
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.DARK_MODE if not is_dark_mode else ft.Icons.LIGHT_MODE,
-                                icon_size=18,
-                                icon_color=quick_icon_color,
-                                tooltip="Cambiar tema",
-                                on_click=self.toggle_theme
-                            ),
-                            ft.IconButton(
-                                icon=ft.Icons.HELP_OUTLINE,
-                                icon_size=18,
-                                icon_color=quick_icon_color,
-                                tooltip="Ayuda",
-                                on_click=self.show_help_dialog
-                            )
-                        ],
-                        alignment=ft.MainAxisAlignment.SPACE_AROUND
-                    )
-                ],
-                spacing=8
-            ),
-            padding=ft.padding.all(10),
-            margin=ft.margin.only(top=10)
-        )
-        
-        menu_controls.append(quick_actions)
+
         
         return ft.Column(
             controls=menu_controls,
@@ -1125,13 +1149,12 @@ class ChatUI:
         if self.current_mode != mode:
             self.current_mode = mode
             
-            # Reinicializar el chatbot con el nuevo modo
-            if self.chatbot:
-                self.chatbot = ChatBot(self.user.id, self.current_mode)
-                # Limpiar el chat para el nuevo modo
-                self.chat_container.controls.clear()
-                # Limpiar la sesión actual para que se cree una nueva cuando sea necesario
-                self.current_session = None
+            # Inicializar el chatbot con el nuevo modo
+            self.chatbot = ChatBot(self.user.id, self.current_mode)
+            # Limpiar el chat para el nuevo modo
+            self.chat_container.controls.clear()
+            # Limpiar la sesión actual para que se cree una nueva cuando sea necesario
+            self.current_session = None
             
             # Actualizar la interfaz según el modo
             if mode == "charlemos":
@@ -1144,6 +1167,10 @@ class ChatUI:
                 self.update_simulemos_mode()
             elif mode == "analicemos":
                 self.update_analicemos_mode()
+            
+            # Actualizar el status text
+            self.status_text.value = f"✅ Conectado como {self.user.username} - Modo {mode.upper()} activo"
+            self.status_text.color = ft.Colors.GREEN_600
             
             # Reconstruir el layout
             if self.page:
@@ -1166,22 +1193,87 @@ class ChatUI:
         
         # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
         if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Hola! 👋 Estás en modo **CHARLEMOS**.
+            welcome_message = """¡Bienvenido al modo **CHARLEMOS**! 💬
 
-Aquí puedes hacer cualquier pregunta sobre PMP de forma completamente libre. Algunos ejemplos:
+**Conversación libre y natural** sobre cualquier tema PMP con tu tutor personal de IA. Perfecto para clarificar dudas, explorar conceptos y tener discusiones profundas sobre Project Management.
 
-• "¿Qué es la gestión de riesgos?"
+## 🎯 **¿Qué puedes hacer aquí?**
+
+### **💭 Preguntas Abiertas:**
+• Conceptos fundamentales del PMBOK Guide
+
+• Diferencias entre metodologías y frameworks
+
+• Aplicación práctica de teorías PMP
+
+• Casos de estudio y ejemplos reales
+
+### **🔍 Clarificaciones y Dudas:**
 • "No entiendo la diferencia entre schedule y timeline"
-• "Explícame como si tuviera 5 años qué es un stakeholder"
-• "¿Cómo se relaciona Agile con el PMBOK?"
 
-**Características especiales:**
-✨ **Clarificaciones**: Puedes pedirme que re-explique de otra forma
-🔍 **Profundización**: Di "profundiza en esto" para más detalles
-🎯 **Analogías**: Pide "dame una analogía" para entender mejor
-🔄 **Cambio libre**: Cambia de tema cuando quieras
+• "¿Qué significa exactamente 'stakeholder engagement'?"
 
-¡Empecemos! ¿Qué te gustaría saber sobre PMP?"""
+• "Explícame como si tuviera 5 años qué es un PMO"
+
+• "¿Cómo se relaciona Agile con el PMBOK tradicional?"
+
+### **🌟 Exploración de Temas:**
+• Gestión de riesgos en proyectos complejos
+
+• Liderazgo y manejo de equipos
+
+• Comunicación efectiva con stakeholders
+
+• Integración de procesos y áreas de conocimiento
+
+## ✨ **Características Especiales:**
+
+🎓 **Explicaciones Adaptativas** - Me adapto a tu nivel de conocimiento
+
+🔄 **Re-explicaciones** - "Explícamelo de otra forma" o "más simple"
+
+🎯 **Analogías Personalizadas** - "Dame una analogía" para conceptos complejos
+
+🔍 **Profundización Inteligente** - "Profundiza en esto" para más detalles
+
+💡 **Ejemplos Prácticos** - Casos reales y situaciones del mundo laboral
+
+🎨 **Múltiples Perspectivas** - Diferentes enfoques para el mismo concepto
+
+## 🚀 **Modos de Conversación:**
+
+### **📚 Modo Explicativo:**
+• Definiciones claras y estructuradas
+
+• Paso a paso de procesos complejos
+
+• Frameworks y metodologías detalladas
+
+### **🤔 Modo Socrático:**
+• Te hago preguntas para que descubras conceptos
+
+• Análisis crítico de situaciones
+
+• Desarrollo del pensamiento estratégico
+
+### **💼 Modo Práctico:**
+• Aplicación en escenarios reales
+
+• Resolución de problemas específicos
+
+• Consejos para el día a día profesional
+
+## 🎪 **Ejemplos de Conversaciones:**
+
+**Conceptual:** "¿Cuál es la diferencia real entre un programa y un proyecto?"
+
+**Práctico:** "Mi stakeholder principal cambió los requisitos a mitad del proyecto, ¿qué hago?"
+
+**Estratégico:** "¿Cómo puedo mejorar la madurez organizacional en gestión de proyectos?"
+
+**Comparativo:** "¿Cuándo usar Waterfall vs Agile vs Híbrido?"
+
+¡Empecemos a charlar! ¿Qué tema de PMP te interesa explorar hoy?"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
@@ -1207,30 +1299,50 @@ Aquí tendrás sesiones de estudio **estructuradas y adaptativas** para dominar 
 ## 🎯 **Cómo funciona:**
 
 **1. Selecciona tu tema** - Dime qué área quieres estudiar
+
 **2. Configuramos la sesión** - Nivel, objetivos y tiempo disponible  
+
 **3. Sesión guiada** - Te guío paso a paso con metodología probada
 
 ## 📚 **Áreas disponibles:**
 
 ### **People Domain:**
 • Leadership & Team Management
+
 • Stakeholder Engagement
 
 ### **Process Domain:**
-• Risk Management • Schedule Management
-• Cost Management • Quality Management  
-• Resource Management • Communications Management
-• Procurement Management • Scope Management
+• Risk Management
+
+• Schedule Management
+
+• Cost Management
+
+• Quality Management  
+
+• Resource Management
+
+• Communications Management
+
+• Procurement Management
+
+• Scope Management
+
 • Integration Management
 
 ### **Business Environment:**
 • Strategy & Governance
+
 • Compliance & Benefits Realization
 
 ## ✨ **Características especiales:**
+
 🎓 **Ritmo personalizado** - Controlas la velocidad
+
 📝 **Checkpoints** - Verifico tu comprensión
+
 📌 **Note-taking** - Te sugiero puntos clave
+
 🔖 **Bookmarks** - Marcamos secciones importantes
 
 **¿Qué tema te gustaría estudiar hoy?** 
@@ -1261,43 +1373,67 @@ Identifica tus **fortalezas y debilidades** con evaluaciones adaptativas y prác
 
 ### **📋 Diagnóstico Inicial:**
 • **Assessment completo** - 50 preguntas que cubren todo el PMBOK
+
 • **Identificación de gaps** - Análisis de áreas débiles  
+
 • **Reporte personalizado** - Plan de estudio recomendado
 
 ### **🎯 Práctica por Área:**
 • **Selección específica** - Focus en un tema
+
 • **Sesiones cortas** - 10-15 preguntas por sesión
+
 • **Feedback inmediato** - Explicación detallada de cada respuesta
+
 • **Adaptive testing** - Dificultad se ajusta según performance
 
 ### **💪 Práctica por Debilidades:**
 • **Target weak areas** - Solo preguntas de áreas débiles
+
 • **Reinforcement learning** - Repite conceptos hasta dominarlos
+
 • **Progress tracking** - Muestra mejora en tiempo real
 
 ## 📚 **Dominios Evaluados:**
 
 **People Domain** | **Process Domain** | **Business Environment**
+
 • Leadership | • Risk Management | • Strategy & Governance
+
 • Team Management | • Schedule Management | • Compliance
+
 • Stakeholder Engagement | • Cost Management | • Benefits Realization
+
 | • Quality Management |
+
 | • Resource Management |
+
 | • Communications |
+
 | • Procurement |
+
 | • Scope Management |
+
 | • Integration |
 
 ## ✨ **Características Especiales:**
+
 📝 **Estilo PMP real** - Preguntas largas con escenarios
+
 🔍 **Explicaciones detalladas** - Por qué cada opción es correcta/incorrecta
+
 📖 **Referencias al PMBOK** - Dónde encontrar más información
+
 ⏱️ **Time tracking** - Mide tiempo para preparar examen real
+
 📊 **Analytics** - Score por dominio y tendencias temporales
 
 **¿Qué tipo de evaluación prefieres?**
+
 • *"Diagnóstico completo"* - Assessment inicial completo
+
 • *"Evaluar Risk Management"* - Práctica por área específica  
+
 • *"Práctica por debilidades"* - Focus en áreas débiles"""
             
             welcome_widget = create_chat_message(welcome_message, False)
@@ -1325,38 +1461,59 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
 
 ### **📋 Examen Completo:**
 • **180 preguntas** - Duración real 230 minutos (3h 50min)
+
 • **Distribución oficial** - People (42%), Process (50%), Business Environment (8%)
+
 • **Break opcional** - 10 minutos en la mitad (como examen real)
+
 • **Ambiente controlado** - Sin pausas, cronómetro visible
 
 ### **⏰ Simulacro por Tiempo:**
 • **30 minutos** - 23 preguntas (práctica rápida)
+
 • **60 minutos** - 47 preguntas (sesión media)
+
 • **90 minutos** - 70 preguntas (práctica extendida)
+
 • **Útil** cuando no tienes tiempo completo
 
 ### **🎯 Simulacro por Dominio:**
 • **Solo People** - 76 preguntas, tiempo proporcional
+
 • **Solo Process** - 90 preguntas, tiempo proporcional  
+
 • **Solo Business Environment** - 14 preguntas, tiempo proporcional
 
 ## ✨ **Características Durante el Examen:**
+
 ⏱️ **Timer prominente** - Cuenta regresiva siempre visible
+
 🗺️ **Question navigator** - Overview de progreso, preguntas marcadas
+
 📌 **Mark for review** - Sistema de marcado como examen real
+
 🚫 **No feedback** - Sin respuestas correctas hasta terminar
+
 💾 **Auto-save** - Guarda progreso automáticamente
 
 ## 📊 **Post-Examen Analysis:**
+
 📈 **Score breakdown** - Por dominio y área de conocimiento
+
 ⏰ **Time analysis** - Tiempo por pregunta, identificar ritmo
+
 🔍 **Question review** - Revisar todas las preguntas con explicaciones
+
 🎯 **Weak areas identification** - Qué estudiar antes del siguiente simulacro
+
 ✅ **Readiness assessment** - Predicción de probabilidad de aprobar examen real
 
 **¿Qué tipo de simulacro prefieres?**
+
 • *"Examen completo"* - 180 preguntas, 230 minutos
+
 • *"Simulacro 60 minutos"* - Práctica de tiempo limitado
+
 • *"Solo Process Domain"* - Focus en área específica"""
             
             welcome_widget = create_chat_message(welcome_message, False)
@@ -1381,44 +1538,71 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
 Vista **comprehensiva del progreso de estudio** y preparación para el examen PMP con analytics predictivos y recomendaciones personalizadas.
 
 ## 📈 **Overview General:**
+
 📊 **Readiness Score** - Porcentaje de preparación estimado
+
 🔥 **Study Streak** - Días consecutivos de estudio
+
 ⏰ **Total Study Time** - Tiempo acumulado en la plataforma
+
 🎯 **Exam Countdown** - Días hasta fecha objetivo de examen
 
 ## 🎯 **Progress por Área:**
+
 📚 **Visual Breakdown** - Dominios People/Process/Business Environment
+
 🗺️ **Heatmap de Conocimiento** - Verde=dominado, Amarillo=en progreso, Rojo=débil
+
 ✅ **Completion Percentage** - Por cada área de conocimiento
+
 ⏱️ **Time Invested** - Por área vs tiempo recomendado
 
 ## 📊 **Performance Analytics:**
+
 📈 **Score Trends** - Gráfico de evolución de scores en el tiempo
+
 🎯 **Question Accuracy** - Porcentaje de aciertos por tipo de pregunta
+
 ⚡ **Speed Analysis** - Tiempo promedio por pregunta vs objetivo
+
 📊 **Consistency Metrics** - Qué tan consistente es el performance
 
 ## 🔍 **Study Patterns:**
+
 ⏰ **Best Study Times** - Cuándo es más efectivo estudiando
+
 📚 **Session Effectiveness** - Correlación entre duración y retención
+
 💡 **Content Preferences** - Chat vs estudio estructurado vs evaluaciones
+
 🎯 **Weak Spot Patterns** - Patrones en errores comunes
 
 ## 🔮 **Predictive Analytics:**
+
 🎯 **Exam Readiness Prediction** - Basado en todos los datos
+
 📋 **Recommended Study Plan** - Próximos pasos para mejorar score
+
 ⏰ **Time to Readiness** - Estimación de cuándo estará listo
+
 ⚠️ **Risk Assessment** - Probabilidad de fallar en áreas específicas
 
 ## 💡 **Actionable Insights:**
+
 📚 **Study Recommendations** - "Enfócate en Risk Management esta semana"
+
 ⏰ **Time Allocation** - "Dedica 60% más tiempo a Process domain"
+
 🎯 **Strategy Adjustments** - "Practica más simulacros completos"
+
 🎯 **Goal Setting** - Objetivos SMART para próxima semana/mes
 
 **¿Qué análisis te gustaría ver?**
+
 • *"Mostrar mi progreso"* - Dashboard completo de progreso
+
 • *"Análisis de preparación"* - Evaluación detallada de readiness
+
 • *"Recomendaciones de estudio"* - Plan personalizado de mejora"""
             
             welcome_widget = create_chat_message(welcome_message, False)
@@ -1916,12 +2100,16 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         try:
             # Inicializar progreso por defecto
             progress_data = {
-                "charlemos": {"progress": 0, "status": "active"},
+                "charlemos": {"progress": 0, "status": "available"},
                 "estudiemos": {"progress": 0, "status": "available"},
                 "evaluemos": {"progress": 0, "status": "available"},
                 "simulemos": {"progress": 0, "status": "available"},
                 "analicemos": {"progress": 0, "status": "available"}
             }
+            
+            # Marcar el modo actual como activo si hay uno seleccionado
+            if self.current_mode:
+                progress_data[self.current_mode]["status"] = "active"
             
             # Calcular progreso basado en conversaciones si el chatbot está disponible
             total_conversations = 0
@@ -1936,7 +2124,9 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
             
             if total_conversations > 0:
                 progress_data["charlemos"]["progress"] = min(total_conversations * 10, 100)
-                progress_data["charlemos"]["status"] = "active"
+                # Solo cambiar el estado si no es el modo actual
+                if self.current_mode != "charlemos":
+                    progress_data["charlemos"]["status"] = "available"
             
             # Calcular progreso de estudio (simulado - se puede conectar con datos reales)
             # Esto se basaría en temas completados, tiempo de estudio, etc.
@@ -1969,13 +2159,17 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         except Exception as e:
             print(f"Error calculando progreso: {e}")
             # Retornar valores por defecto en caso de error
-            return {
-                "charlemos": {"progress": 0, "status": "active"},
+            default_progress = {
+                "charlemos": {"progress": 0, "status": "available"},
                 "estudiemos": {"progress": 0, "status": "available"},
                 "evaluemos": {"progress": 0, "status": "available"},
                 "simulemos": {"progress": 0, "status": "available"},
                 "analicemos": {"progress": 0, "status": "available"}
             }
+            # Marcar el modo actual como activo si hay uno seleccionado
+            if self.current_mode:
+                default_progress[self.current_mode]["status"] = "active"
+            return default_progress
 
 def create_app(user: User):
     """
