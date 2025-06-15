@@ -2041,50 +2041,23 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
     
     def show_user_profile_dialog(self, e):
         """
-        Muestra el diálogo de perfil y configuración del usuario.
+        Muestra el formulario de perfil en la sección del chat.
         """
-        print(f"DEBUG: show_user_profile_dialog llamado")
-        print(f"DEBUG: self.page = {self.page}")
-        print(f"DEBUG: self.user = {self.user}")
+        print(f"DEBUG: Mostrando perfil de usuario en chat")
         
-        if not self.page:
-            print("ERROR: self.page es None")
-            return
-            
-        # Crear un diálogo muy simple para probar
-        simple_dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Test Dialog"),
-            content=ft.Text("¿Puedes ver este diálogo?"),
-            actions=[
-                ft.TextButton("Sí", on_click=lambda e: self.close_simple_dialog()),
-                ft.TextButton("No", on_click=lambda e: self.close_simple_dialog())
-            ]
-        )
-        
-        print("DEBUG: Creando diálogo simple...")
-        self.page.dialog = simple_dialog
-        simple_dialog.open = True
-        print("DEBUG: Llamando page.update()...")
-        self.page.update()
-        print("DEBUG: page.update() completado")
+        # Limpiar el chat y mostrar el formulario de perfil
+        self.show_profile_form()
     
-    def close_simple_dialog(self):
-        if self.page and self.page.dialog:
-            self.page.dialog.open = False
-            self.page.update()
-    
-    def show_full_profile_dialog(self, e):
+    def show_profile_form(self):
         """
-        Muestra el diálogo completo de perfil de usuario.
+        Muestra el formulario de perfil directamente en el área del chat.
         """
-        def close_dialog(e):
-            profile_dialog.open = False
-            self.page.update()
+        # Limpiar el contenedor del chat
+        self.chat_container.controls.clear()
         
         def save_profile(e):
             try:
-                # Actualizar datos básicos
+                # Actualizar datos del usuario en la base de datos
                 from db.database import DatabaseManager
                 db_manager = DatabaseManager()
                 
@@ -2114,71 +2087,234 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
                         
                         db.commit()
                         
-                        # Actualizar objeto local
+                        # Actualizar objeto usuario local
                         self.user.username = user.username
                         self.user.email = user.email
                         
+                        # Actualizar header con nuevo nombre
+                        self.rebuild_ui()
+                        
                         # Mostrar mensaje de éxito
-                        snack_bar = ft.SnackBar(
-                            content=ft.Text("✅ Perfil actualizado exitosamente"),
-                            bgcolor=ft.Colors.GREEN_600
+                        success_message = ft.Container(
+                            content=ft.Text(
+                                "✅ Perfil actualizado exitosamente",
+                                color=ft.Colors.GREEN_600,
+                                size=16,
+                                weight=ft.FontWeight.BOLD
+                            ),
+                            padding=ft.padding.all(15),
+                            margin=ft.margin.only(bottom=20),
+                            bgcolor=ft.Colors.GREEN_50,
+                            border_radius=8,
+                            border=ft.border.all(1, ft.Colors.GREEN_200)
                         )
-                        self.page.overlay.append(snack_bar)
-                        snack_bar.open = True
+                        
+                        self.chat_container.controls.insert(0, success_message)
                         self.page.update()
                         
-                        close_dialog(e)
+                        # Volver al chat después de 2 segundos
+                        import threading
+                        import time
+                        def return_to_chat():
+                            time.sleep(2)
+                            self.return_to_chat()
+                        
+                        threading.Thread(target=return_to_chat, daemon=True).start()
                         
             except Exception as error:
                 print(f"Error al actualizar perfil: {error}")
-                snack_bar = ft.SnackBar(
-                    content=ft.Text(f"❌ Error: {str(error)}"),
-                    bgcolor=ft.Colors.RED_600
+                error_message = ft.Container(
+                    content=ft.Text(
+                        f"❌ Error al actualizar perfil: {str(error)}",
+                        color=ft.Colors.RED_600,
+                        size=14
+                    ),
+                    padding=ft.padding.all(15),
+                    margin=ft.margin.only(bottom=20),
+                    bgcolor=ft.Colors.RED_50,
+                    border_radius=8,
+                    border=ft.border.all(1, ft.Colors.RED_200)
                 )
-                self.page.overlay.append(snack_bar)
-                snack_bar.open = True
+                self.chat_container.controls.insert(0, error_message)
                 self.page.update()
         
-        # Campos del formulario
-        username_field = ft.TextField(label="Nombre de usuario", value=self.user.username, width=300)
-        email_field = ft.TextField(label="Email", value=self.user.email, width=300)
-        full_name_field = ft.TextField(label="Nombre completo", value=getattr(self.user, 'full_name', '') or '', width=300)
-        phone_field = ft.TextField(label="Teléfono", value=getattr(self.user, 'phone', '') or '', width=300)
-        company_field = ft.TextField(label="Empresa", value=getattr(self.user, 'company', '') or '', width=300)
-        position_field = ft.TextField(label="Cargo", value=getattr(self.user, 'position', '') or '', width=300)
-        experience_field = ft.TextField(label="Años experiencia PM", value=str(getattr(self.user, 'experience_years', '') or ''), width=300)
-        target_date_field = ft.TextField(label="Fecha objetivo examen", value=getattr(self.user, 'target_exam_date', '') or '', width=300)
-        study_hours_field = ft.TextField(label="Horas estudio diarias", value=str(getattr(self.user, 'study_hours_daily', '') or ''), width=300)
+        def cancel_profile(e):
+            self.return_to_chat()
         
-        # Crear diálogo
-        profile_dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("👤 Gestión de Perfil"),
+        # Campos del formulario
+        username_field = ft.TextField(
+            label="Nombre de usuario",
+            value=self.user.username,
+            prefix_icon=ft.Icons.PERSON,
+            width=400
+        )
+        
+        email_field = ft.TextField(
+            label="Email",
+            value=self.user.email,
+            prefix_icon=ft.Icons.EMAIL,
+            width=400
+        )
+        
+        full_name_field = ft.TextField(
+            label="Nombre completo",
+            value=getattr(self.user, 'full_name', '') or '',
+            prefix_icon=ft.Icons.BADGE,
+            width=400
+        )
+        
+        phone_field = ft.TextField(
+            label="Teléfono",
+            value=getattr(self.user, 'phone', '') or '',
+            prefix_icon=ft.Icons.PHONE,
+            width=400
+        )
+        
+        company_field = ft.TextField(
+            label="Empresa",
+            value=getattr(self.user, 'company', '') or '',
+            prefix_icon=ft.Icons.BUSINESS,
+            width=400
+        )
+        
+        position_field = ft.TextField(
+            label="Cargo/Posición",
+            value=getattr(self.user, 'position', '') or '',
+            prefix_icon=ft.Icons.WORK,
+            width=400
+        )
+        
+        experience_field = ft.TextField(
+            label="Años de experiencia en PM",
+            value=str(getattr(self.user, 'experience_years', '') or ''),
+            prefix_icon=ft.Icons.TIMELINE,
+            width=400,
+            keyboard_type=ft.KeyboardType.NUMBER
+        )
+        
+        target_date_field = ft.TextField(
+            label="Fecha objetivo del examen PMP",
+            value=getattr(self.user, 'target_exam_date', '') or '',
+            prefix_icon=ft.Icons.CALENDAR_TODAY,
+            width=400,
+            hint_text="DD/MM/YYYY"
+        )
+        
+        study_hours_field = ft.TextField(
+            label="Horas de estudio diarias",
+            value=str(getattr(self.user, 'study_hours_daily', '') or ''),
+            prefix_icon=ft.Icons.SCHEDULE,
+            width=400,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            hint_text="2-4 horas recomendadas"
+        )
+        
+        # Crear el formulario
+        profile_form = ft.Container(
             content=ft.Column(
                 controls=[
+                    # Header
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE_600, size=30),
+                                ft.Text("Gestión de Perfil", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700)
+                            ],
+                            spacing=10
+                        ),
+                        margin=ft.margin.only(bottom=20)
+                    ),
+                    
+                    # Información Básica
+                    ft.Text("📋 Información Básica", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
                     username_field,
                     email_field,
                     full_name_field,
                     phone_field,
+                    
+                    ft.Divider(height=20),
+                    
+                    # Información Profesional
+                    ft.Text("💼 Información Profesional", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
                     company_field,
                     position_field,
                     experience_field,
+                    
+                    ft.Divider(height=20),
+                    
+                    # Objetivos PMP
+                    ft.Text("🎯 Objetivos de Estudio PMP", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700),
                     target_date_field,
-                    study_hours_field
+                    study_hours_field,
+                    
+                    ft.Divider(height=20),
+                    
+                    # Botones
+                    ft.Row(
+                        controls=[
+                            ft.ElevatedButton(
+                                "Cancelar",
+                                icon=ft.Icons.CANCEL,
+                                on_click=cancel_profile,
+                                style=ft.ButtonStyle(
+                                    bgcolor=ft.Colors.GREY_300,
+                                    color=ft.Colors.BLACK
+                                )
+                            ),
+                            ft.ElevatedButton(
+                                "Guardar Cambios",
+                                icon=ft.Icons.SAVE,
+                                on_click=save_profile,
+                                style=ft.ButtonStyle(
+                                    bgcolor=ft.Colors.BLUE_600,
+                                    color=ft.Colors.WHITE
+                                )
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
+                        spacing=10
+                    )
                 ],
-                spacing=10,
+                spacing=15,
                 scroll=ft.ScrollMode.AUTO,
-                height=400
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER
             ),
-            actions=[
-                ft.TextButton("Cancelar", on_click=close_dialog),
-                ft.ElevatedButton("Guardar", on_click=save_profile)
-            ]
+            padding=ft.padding.all(20),
+            margin=ft.margin.all(10),
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=10,
+                color=ft.Colors.BLACK12,
+                offset=ft.Offset(0, 2)
+            )
         )
         
-        self.page.dialog = profile_dialog
-        profile_dialog.open = True
-        self.page.update()
+        # Agregar el formulario al chat
+        self.chat_container.controls.append(profile_form)
+        
+        # Actualizar la página
+        if self.page:
+            self.page.update()
+    
+    def return_to_chat(self):
+        """
+        Regresa al chat normal desde el formulario de perfil.
+        """
+        # Limpiar el contenedor del chat
+        self.chat_container.controls.clear()
+        
+        # Mostrar mensaje de bienvenida o cargar historial según el modo
+        if self.current_mode:
+            self.load_conversation_history()
+        else:
+            self.show_welcome_screen()
+        
+        if self.page:
+            self.page.update()
+    
+
     
     def rebuild_ui(self):
         """
