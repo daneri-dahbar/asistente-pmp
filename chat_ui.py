@@ -180,6 +180,7 @@ class ChatUI:
         self.page = None
         self.sidebar_visible = True
         self.should_auto_scroll = False  # Controla cuándo hacer auto-scroll
+        self.showing_profile = False  # Controla si se está mostrando el formulario de perfil
     
     def scroll_to_bottom(self):
         """
@@ -1810,40 +1811,41 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
             height=None  # Se ajusta al contenido
         )
         
-        # Área de entrada de mensajes
-        input_area = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Divider(height=1, color=ft.Colors.GREY_300),
-                    ft.Row(
-                        controls=[
-                            self.status_text
-                        ],
-                        alignment=ft.MainAxisAlignment.CENTER
-                    ),
-                    ft.Row(
-                        controls=[
-                            ft.Container(
-                                content=self.message_input,
-                                expand=True
-                            ),
-                            self.send_button
-                        ],
-                        spacing=10
-                    )
-                ],
-                spacing=10
-            ),
-            padding=ft.padding.all(20),
-            bgcolor=ft.Colors.GREY_50
-        )
+        # Área de entrada de mensajes (solo si hay un modo activo y no se está mostrando el perfil)
+        chat_controls = [chat_area]
+        
+        if not self.showing_profile and self.current_mode:
+            input_area = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.Divider(height=1, color=ft.Colors.GREY_300),
+                        ft.Row(
+                            controls=[
+                                self.status_text
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER
+                        ),
+                        ft.Row(
+                            controls=[
+                                ft.Container(
+                                    content=self.message_input,
+                                    expand=True
+                                ),
+                                self.send_button
+                            ],
+                            spacing=10
+                        )
+                    ],
+                    spacing=10
+                ),
+                padding=ft.padding.all(20),
+                bgcolor=ft.Colors.GREY_50
+            )
+            chat_controls.append(input_area)
         
         # Área principal de chat
         main_chat_area = ft.Column(
-            controls=[
-                chat_area,
-                input_area
-            ],
+            controls=chat_controls,
             spacing=0,
             expand=True
         )
@@ -2052,6 +2054,9 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         """
         Muestra el formulario de perfil directamente en el área del chat.
         """
+        # Activar estado de mostrar perfil
+        self.showing_profile = True
+        
         # Limpiar el contenedor del chat
         self.chat_container.controls.clear()
         
@@ -2294,6 +2299,9 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         # Agregar el formulario al chat
         self.chat_container.controls.append(profile_form)
         
+        # Reconstruir el layout completo para ocultar la barra de entrada
+        self.rebuild_ui()
+        
         # Actualizar la página
         if self.page:
             self.page.update()
@@ -2302,6 +2310,9 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
         """
         Regresa al chat normal desde el formulario de perfil.
         """
+        # Desactivar estado de mostrar perfil
+        self.showing_profile = False
+        
         # Limpiar el contenedor del chat
         self.chat_container.controls.clear()
         
@@ -2310,6 +2321,9 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
             self.load_conversation_history()
         else:
             self.show_welcome_screen()
+        
+        # Reconstruir el layout completo para mostrar la barra de entrada
+        self.rebuild_ui()
         
         if self.page:
             self.page.update()
