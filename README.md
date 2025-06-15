@@ -14,8 +14,316 @@ Una aplicación de escritorio especializada en preparación para la certificaci�
 - 🧠 **Integración con OpenAI** GPT-4o-mini a través de LangChain
 - 💾 **Persistencia local** con SQLite y SQLAlchemy
 - 📝 **Historial de conversaciones** que se mantiene entre sesiones por usuario
-- 🎯 **Interfaz moderna especializada** para estudio PMP con mensajes alineados
+- 🎯 **5 Modos especializados** de estudio PMP con IA adaptativa
+- 📊 **Sistema de análisis** de progreso basado en datos reales
+- 👤 **Gestión de perfil** de usuario con objetivos de certificación
+- ⏰ **Zona horaria GMT-3** para timestamps locales
 - 📦 **Preparado para empaquetado** con PyInstaller
+
+## 🎯 Flujos de Usuario
+
+### 🔐 **Flujo de Autenticación**
+
+#### **Registro de Nuevo Usuario**
+1. **Pantalla inicial**: Al abrir la aplicación, aparece la pantalla de login
+2. **Acceso a registro**: Clic en "¿No tienes cuenta? Regístrate"
+3. **Formulario de registro**:
+   - **Usuario**: 3-50 caracteres, solo letras, números y guiones bajos
+   - **Email**: Formato válido de email (único en el sistema)
+   - **Contraseña**: Mínimo 6 caracteres, debe contener letras y números
+   - **Confirmar contraseña**: Validación en tiempo real
+4. **Validación**: Indicador de fortaleza de contraseña y verificación de datos
+5. **Registro exitoso**: Automáticamente redirige al login
+6. **Seguridad**: Contraseña hasheada con SHA-256 + salt único
+
+#### **Inicio de Sesión**
+1. **Credenciales**: Ingreso de usuario y contraseña
+2. **Validación**: Verificación contra base de datos encriptada
+3. **Acceso**: Entrada al dashboard principal con datos del usuario
+4. **Sesión persistente**: Mantiene la sesión hasta logout manual
+
+### 👤 **Flujo de Gestión de Perfil**
+
+#### **Configuración Inicial del Perfil**
+1. **Acceso**: Clic en el nombre de usuario en el header superior
+2. **Formulario de perfil** organizado en secciones:
+   - **Información Básica**: Nombre completo, teléfono
+   - **Información Profesional**: Empresa, cargo, años de experiencia en PM
+   - **Objetivos PMP**: Fecha objetivo del examen, horas de estudio diarias
+3. **Validación**: Campos opcionales y obligatorios claramente marcados
+4. **Guardado**: Almacenamiento en base de datos con confirmación
+5. **Retorno automático**: Vuelta al chat después de 2 segundos
+
+#### **Actualización de Perfil**
+1. **Acceso rápido**: Clic en nombre de usuario desde cualquier pantalla
+2. **Datos precargados**: Formulario con información existente
+3. **Edición selectiva**: Modificar solo los campos deseados
+4. **Guardado incremental**: Actualización de campos modificados
+
+### 🎓 **Flujos de Modos de Estudio**
+
+#### **🗣️ Modo CHARLEMOS - Conversación Libre**
+
+**Objetivo**: Interacción natural con tutor PMP especializado
+
+**Flujo de Usuario**:
+1. **Selección**: Clic en "CHARLEMOS" en el menú de modos
+2. **Inicialización**: Mensaje de bienvenida con capacidades del tutor
+3. **Conversación libre**:
+   - Preguntas sobre conceptos PMP
+   - Solicitudes de clarificación ("no entiendo", "explícalo de otra forma")
+   - Pedidos de profundización ("más detalles", "profundiza en esto")
+   - Analogías ("dame una analogía")
+   - Cambios de tema libres
+4. **Respuestas adaptativas**: IA ajusta explicaciones según el nivel del usuario
+5. **Ejemplos prácticos**: Casos reales de gestión de proyectos
+6. **Seguimiento**: Preguntas que fomentan reflexión y diálogo
+
+**Características**:
+- Tutor paciente y didáctico
+- Explicaciones con analogías y ejemplos
+- Soporte para cambios de tema
+- Reformulación automática si no se entiende
+
+#### **📚 Modo ESTUDIEMOS - Sesiones Estructuradas**
+
+**Objetivo**: Aprendizaje sistemático de temas específicos del PMBOK
+
+**Flujo de Usuario**:
+1. **Selección**: Clic en "ESTUDIEMOS" en el menú de modos
+2. **Selección de tema**: Usuario especifica área de conocimiento o dominio
+3. **Evaluación de nivel**: IA determina conocimiento actual del usuario
+4. **Sesión estructurada** (6 pasos):
+   - **Introducción**: Overview y objetivos de aprendizaje
+   - **Conceptos core**: Explicación de fundamentos
+   - **Ejemplos prácticos**: Casos reales y aplicaciones
+   - **Herramientas y técnicas**: Tools específicas del área
+   - **Conexiones**: Relación con otras áreas del PMBOK
+   - **Resumen y next steps**: Consolidación y recomendaciones
+5. **Interactividad**:
+   - Checkpoints de comprensión
+   - Ritmo personalizado según respuestas
+   - Sugerencias para tomar notas
+   - Identificación de secciones importantes
+6. **Adaptación inteligente**: Ajuste de complejidad según performance
+
+**Dominios Cubiertos**:
+- **People Domain**: Leadership, Team Management, Stakeholder Engagement
+- **Process Domain**: 9 áreas de conocimiento del PMBOK
+- **Business Environment**: Strategy, Governance, Compliance
+
+#### **📝 Modo EVALUEMOS - Práctica y Evaluación**
+
+**Objetivo**: Identificar fortalezas/debilidades y práctica dirigida
+
+**Flujo de Usuario**:
+1. **Selección**: Clic en "EVALUEMOS" en el menú de modos
+2. **Tipo de evaluación**:
+   - **Diagnóstico inicial**: 50 preguntas comprehensivas
+   - **Práctica por área**: 10-15 preguntas de dominio específico
+   - **Práctica por debilidades**: Focus en áreas identificadas como débiles
+3. **Configuración de sesión**:
+   - Selección de área específica (opcional)
+   - Número de preguntas deseado
+   - Tiempo disponible
+4. **Sesión de evaluación**:
+   - Preguntas estilo PMP real con escenarios detallados
+   - Múltiples opciones plausibles
+   - Time tracking por pregunta
+   - Sin feedback durante la evaluación
+5. **Análisis post-evaluación**:
+   - Score por dominio y área de conocimiento
+   - Explicaciones detalladas de cada respuesta
+   - Identificación de patrones de error
+   - Referencias específicas al PMBOK
+   - Recomendaciones de estudio personalizadas
+6. **Seguimiento de progreso**:
+   - Tracking de mejora en el tiempo
+   - Identificación de áreas que necesitan refuerzo
+   - Spaced repetition para retención
+
+**Características**:
+- Preguntas largas con contexto real
+- Feedback inmediato y educativo
+- Analytics de rendimiento detallados
+- Adaptive testing según performance
+
+#### **🏆 Modo SIMULEMOS - Exámenes Completos**
+
+**Objetivo**: Experiencia de examen real en condiciones controladas
+
+**Flujo de Usuario**:
+1. **Selección**: Clic en "SIMULEMOS" en el menú de modos
+2. **Tipo de simulacro**:
+   - **Examen completo**: 180 preguntas, 230 minutos
+   - **Simulacro por tiempo**: 30/60/90 minutos con preguntas proporcionales
+   - **Simulacro por dominio**: Solo People/Process/Business Environment
+3. **Briefing pre-examen**: Instrucciones como examen real PMP
+4. **Ambiente de examen**:
+   - Timer prominente con cuenta regresiva
+   - Question navigator con progreso visual
+   - Sistema de marcado para revisión
+   - Auto-save cada 30 segundos
+   - Sin feedback durante el examen
+5. **Administración del examen**:
+   - Navegación entre preguntas
+   - Marcado de preguntas dudosas
+   - Break opcional a mitad del examen (solo examen completo)
+   - Confirmación antes de envío final
+6. **Análisis post-examen comprehensivo**:
+   - **Score breakdown**: General y por dominio
+   - **Time analysis**: Ritmo vs recomendado
+   - **Question review**: Explicaciones detalladas
+   - **Weak areas identification**: Priorización de estudio
+   - **Readiness assessment**: Predicción de probabilidad de aprobar
+7. **Recomendaciones**:
+   - Plan de estudio personalizado
+   - Cuándo programar el examen real
+   - Siguiente simulacro recomendado
+
+**Distribución Oficial**:
+- People Domain: 42% (76 preguntas)
+- Process Domain: 50% (90 preguntas)
+- Business Environment: 8% (14 preguntas)
+
+#### **📊 Modo ANALICEMOS - Dashboard de Progreso**
+
+**Objetivo**: Análisis comprehensivo basado en datos reales de uso
+
+**Flujo de Usuario**:
+1. **Selección**: Clic en "ANALICEMOS" en el menú de modos
+2. **Carga automática**: Sistema extrae datos de sesiones de EVALUEMOS y SIMULEMOS
+3. **Dashboard interactivo** con secciones:
+
+   **📈 Overview General**:
+   - Resumen de actividad total
+   - Tiempo de estudio acumulado
+   - Racha de días consecutivos
+   - Distribución por modo de estudio
+
+   **🎯 Análisis de Evaluaciones**:
+   - Detalle de sesiones de EVALUEMOS
+   - Temas/áreas cubiertas
+   - Tiempo por sesión y preguntas respondidas
+   - Patrones de práctica y frecuencia
+
+   **🏆 Análisis de Simulacros**:
+   - Historial de sesiones de SIMULEMOS
+   - Tipos de examen realizados
+   - Estado de completitud
+   - Progreso en simulacros
+
+   **🔍 Patrones de Estudio**:
+   - Mejores horarios de estudio
+   - Días preferidos de la semana
+   - Modo favorito de estudio
+   - Consistencia y regularidad
+
+   **📈 Tendencias y Predicciones**:
+   - Frecuencia de estudio (sesiones por semana)
+   - Tendencias de engagement
+   - Recomendaciones personalizadas
+
+4. **Consultas específicas**:
+   - "Mostrar mi dashboard completo"
+   - "Analizar mis evaluaciones"
+   - "Revisar mis simulacros"
+   - "Patrones de estudio"
+   - "Tendencias de progreso"
+   - "Recomendaciones personalizadas"
+
+5. **Transparencia total**: 
+   - Solo muestra datos que realmente existen
+   - Indica claramente cuando faltan datos
+   - No genera métricas ficticias
+
+**Características Únicas**:
+- Basado 100% en datos reales del usuario
+- Análisis de patrones de comportamiento
+- Recomendaciones accionables
+- Tracking de progreso temporal
+
+### 💬 **Flujo de Gestión de Conversaciones**
+
+#### **Navegación entre Conversaciones**
+1. **Sidebar de conversaciones**: Lista organizada por última actividad
+2. **Preview de mensajes**: Vista previa del último mensaje
+3. **Indicadores visuales**: Conversación activa resaltada
+4. **Filtrado por modo**: Conversaciones organizadas por tipo de estudio
+5. **Cambio rápido**: Clic en cualquier conversación para cambiar
+
+#### **Creación de Nueva Conversación**
+1. **Acceso múltiple**: Botón "+" en header o sidebar
+2. **Selección de modo**: Automáticamente hereda el modo actual
+3. **Nombre automático**: Generado según el modo seleccionado
+4. **Inicialización**: Mensaje de bienvenida específico del modo
+
+#### **Gestión de Conversaciones Existentes**
+1. **Renombrar**:
+   - Menú contextual (⋮) → "Renombrar"
+   - Diálogo con nombre actual precargado
+   - Validación de nombre único
+   - Actualización inmediata en sidebar
+
+2. **Eliminar**:
+   - Menú contextual (⋮) → "Eliminar"
+   - Confirmación de seguridad
+   - Eliminación permanente de mensajes
+   - Redirección automática a otra conversación
+
+#### **Características de Conversaciones**
+- **Persistencia**: Historial guardado permanentemente
+- **Privacidad**: Solo el usuario propietario puede ver sus conversaciones
+- **Organización**: Ordenadas por última actividad
+- **Contexto**: Cada conversación mantiene su modo específico
+- **Búsqueda visual**: Preview de mensajes para identificación rápida
+
+### 🔄 **Flujo de Navegación General**
+
+#### **Cambio de Modos**
+1. **Menú de modos**: Sidebar izquierdo con 5 opciones
+2. **Indicadores visuales**: Modo actual resaltado con colores específicos
+3. **Cambio de contexto**: IA se adapta automáticamente al nuevo modo
+4. **Conservación de estado**: Conversaciones separadas por modo
+5. **Mensajes de bienvenida**: Cada modo explica sus capacidades
+
+#### **Interfaz Adaptativa**
+1. **Sidebar colapsable**: Botón de menú (☰) para mostrar/ocultar
+2. **Responsive**: Ajuste automático según tamaño de ventana
+3. **Área de entrada condicional**: Solo visible cuando hay modo activo
+4. **Estados de la aplicación**:
+   - Sin modo seleccionado: Solo navegación
+   - Modo activo: Chat completo disponible
+   - Gestión de perfil: Área de entrada oculta
+
+#### **Control de Scroll Inteligente**
+1. **Auto-scroll selectivo**: Solo en situaciones apropiadas
+2. **Scroll manual**: Permitido para leer mensajes anteriores
+3. **Activación automática**:
+   - Al abrir conversaciones nuevas
+   - Al cambiar de conversación
+   - Al enviar mensajes
+   - Al recibir respuestas
+
+### ⚙️ **Flujos de Configuración y Mantenimiento**
+
+#### **Configuración de la Aplicación**
+1. **Variables de entorno**: Archivo `.env` con API key de OpenAI
+2. **Base de datos**: Creación automática en primera ejecución
+3. **Zona horaria**: GMT-3 configurada para timestamps locales
+4. **Persistencia**: Todos los datos guardados localmente
+
+#### **Gestión de Sesiones**
+1. **Inicio de sesión**: Validación y carga de datos del usuario
+2. **Sesión activa**: Mantenimiento del estado durante uso
+3. **Logout seguro**: Limpieza de datos en memoria
+4. **Reconexión**: Restauración automática de última sesión
+
+#### **Manejo de Errores**
+1. **Validación de entrada**: Verificación en tiempo real
+2. **Errores de conexión**: Mensajes informativos al usuario
+3. **Recuperación automática**: Reintento de operaciones fallidas
+4. **Logs de debug**: Información técnica para resolución de problemas
 
 ## 📋 Requisitos Previos
 
@@ -30,12 +338,19 @@ Una aplicación de escritorio especializada en preparación para la certificaci�
    cd asistente-pmp
    ```
 
-2. **Instala las dependencias**
+2. **Crea y activa el entorno virtual**
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate  # En Windows
+   source .venv/bin/activate  # En Linux/Mac
+   ```
+
+3. **Instala las dependencias**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configura las variables de entorno**
+4. **Configura las variables de entorno**
    
    Crea un archivo `.env` en la raíz del proyecto:
    ```env
@@ -43,38 +358,10 @@ Una aplicación de escritorio especializada en preparación para la certificaci�
    DATABASE_URL=sqlite:///chat_history.db
    ```
 
-4. **Ejecuta la aplicación**
+5. **Ejecuta la aplicación**
    ```bash
    python main.py
    ```
-
-## 🔐 Sistema de Autenticación
-
-### Primer Uso - Registro de Usuario
-
-1. **Ejecuta la aplicación** y verás la pantalla de login
-2. **Haz clic en "¿No tienes cuenta? Regístrate"**
-3. **Completa el formulario de registro**:
-   - **Usuario**: 3-50 caracteres, solo letras, números y guiones bajos
-   - **Email**: Formato válido de email
-   - **Contraseña**: Mínimo 6 caracteres, debe contener letras y números
-   - **Confirmar contraseña**: Debe coincidir con la anterior
-4. **Haz clic en "Registrarse"**
-5. **Automáticamente cambiará al modo login** tras registro exitoso
-
-### Login
-
-1. **Ingresa tu usuario y contraseña**
-2. **Haz clic en "Iniciar Sesión"**
-3. **Accederás a tu chat personal** con tu historial privado
-
-### Características de Seguridad
-
-- ✅ **Contraseñas hasheadas** con SHA-256 y salt único por usuario
-- ✅ **Validación de datos** en tiempo real
-- ✅ **Indicador de fortaleza** de contraseña durante registro
-- ✅ **Usuarios únicos** por nombre de usuario y email
-- ✅ **Sesiones privadas** - cada usuario ve solo sus conversaciones
 
 ## 📁 Estructura del Proyecto
 
@@ -94,48 +381,27 @@ asistente-pmp/
 └── chat_history.db     # Base de datos SQLite (se crea automáticamente)
 ```
 
-## 🔧 Uso
-
-### Primera Ejecución
-1. **Registro**: Crea tu cuenta de usuario la primera vez
-2. **Base de datos**: Se crea automáticamente la base de datos SQLite
-
-### Usando el Chat
-1. **Login**: Inicia sesión con tu usuario y contraseña
-2. **Gestión de conversaciones**:
-   - **Ver conversaciones**: Sidebar izquierdo con lista de chats
-   - **Alternar sidebar**: Botón de menú (☰) para mostrar/ocultar
-   - **Nueva conversación**: Botón "+" en barra superior o sidebar
-   - **Cambiar conversación**: Clic en cualquier chat del sidebar
-   - **Renombrar**: Menú contextual (⋮) → "Renombrar"
-   - **Eliminar**: Menú contextual (⋮) → "Eliminar"
-3. **Escribir mensajes**: Usa el campo de texto en la parte inferior
-4. **Enviar**: Presiona Enter o haz clic en el botón de enviar
-5. **Cerrar sesión**: Usa el botón de logout en la barra superior
-6. **Historial privado**: Tus mensajes se guardan y solo tú puedes verlos
-
 ## 🎨 Características de la Interfaz
 
 ### Área Principal de Chat
-- **Mensajes del usuario**: Aparecen alineados a la derecha en azul
-- **Respuestas de la IA**: Aparecen alineadas a la izquierda en gris
+- **Mensajes del usuario**: Aparecen con avatar azul y timestamp local
+- **Respuestas de la IA**: Aparecen con avatar verde y formato Markdown
 - **Indicador de escritura**: Muestra cuando la IA está procesando
-- **Scroll automático**: Se desplaza automáticamente a los mensajes nuevos
+- **Scroll inteligente**: Automático solo cuando es apropiado
 - **Texto seleccionable**: Puedes copiar cualquier mensaje
 
 ### Sidebar de Conversaciones
-- **Lista de chats**: Todas tus conversaciones organizadas
+- **Lista de chats**: Organizadas por última actividad
 - **Preview de mensajes**: Vista previa del último mensaje
-- **Conversación activa**: Resaltada en azul
+- **Indicadores de modo**: Etiquetas de color por tipo de estudio
+- **Conversación activa**: Resaltada visualmente
 - **Menú contextual**: Opciones de renombrar y eliminar
 - **Colapsable**: Ocultar/mostrar para más espacio
-- **Scroll independiente**: Navega por muchas conversaciones
 
-### Controles
+### Header Superior
+- **Nombre de usuario**: Clickeable para gestión de perfil
 - **Botón de menú (☰)**: Alternar sidebar
-- **Botón "+" (múltiples ubicaciones)**: Nueva conversación
-- **Campo de texto**: Entrada de mensajes con soporte multilínea
-- **Botón de envío**: Enviar mensaje o usar Enter
+- **Botón "+" **: Nueva conversación
 - **Botón de logout**: Cerrar sesión segura
 
 ## 📦 Empaquetado con PyInstaller
@@ -157,64 +423,6 @@ Para crear un ejecutable independiente:
    pyinstaller main.spec
    ```
 
-### Archivo main.spec (opcional)
-
-Crea un archivo `main.spec` para configuración avanzada:
-
-```python
-# -*- mode: python ; coding: utf-8 -*-
-
-block_cipher = None
-
-a = Analysis(
-    ['main.py'],
-    pathex=[],
-    binaries=[],
-    datas=[('.env', '.')],  # Incluir archivo .env
-    hiddenimports=[
-        'flet',
-        'openai',
-        'langchain',
-        'langchain_openai',
-        'sqlalchemy',
-        'python-dotenv'
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-    noarchive=False,
-)
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name='Asistente-PMP',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,  # Sin ventana de consola
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon='icon.ico'  # Opcional: icono personalizado
-)
-```
-
 ## 🔍 Solución de Problemas
 
 ### Error: "OPENAI_API_KEY no encontrada"
@@ -223,8 +431,8 @@ exe = EXE(
 - No uses comillas en el archivo `.env`
 
 ### Error: "No module named 'flet'"
+- Activa el entorno virtual: `.venv\Scripts\activate`
 - Ejecuta: `pip install -r requirements.txt`
-- Verifica que estés usando el entorno virtual correcto
 
 ### La aplicación no se conecta a OpenAI
 - Verifica tu conexión a internet
@@ -235,6 +443,10 @@ exe = EXE(
 - Elimina el archivo `chat_history.db` para empezar de nuevo
 - La aplicación creará una nueva base de datos automáticamente
 
+### Problemas de zona horaria
+- Los timestamps se muestran en GMT-3 (hora local)
+- Si ves horarios incorrectos, verifica la configuración del sistema
+
 ## 🛠️ Desarrollo
 
 ### Agregar nuevas funcionalidades
@@ -242,6 +454,7 @@ exe = EXE(
 1. **Nuevos modelos de datos**: Modifica `db/models.py`
 2. **Lógica del chatbot**: Edita `chatbot.py`
 3. **Interfaz de usuario**: Actualiza `chat_ui.py`
+4. **Nuevos modos**: Agrega prompts en `chatbot.py` y UI en `chat_ui.py`
 
 ### Configuración del modelo
 
@@ -285,4 +498,4 @@ Si encuentras algún problema o tienes sugerencias:
 
 ---
 
-**¡Disfruta chateando con tu asistente de IA! 🎉** 
+**¡Disfruta preparándote para tu certificación PMP! 🎉** 

@@ -499,6 +499,12 @@ Responde siempre en español con un enfoque analítico, honesto y basado en dato
             # Crear mensaje del usuario
             human_message = HumanMessage(content=user_message)
             
+            # Si estamos en modo ANALICEMOS, agregar datos analíticos al contexto
+            if self.mode == "analicemos":
+                analytics_data = self._get_analytics_context()
+                enhanced_message = f"{user_message}\n\n[DATOS ANALÍTICOS DISPONIBLES]:\n{analytics_data}"
+                human_message = HumanMessage(content=enhanced_message)
+            
             # Construir el historial completo para enviar a la IA
             messages_to_send = [self.system_message] + self.conversation_history + [human_message]
             
@@ -506,11 +512,12 @@ Responde siempre en español con un enfoque analítico, honesto y basado en dato
             response = self.llm.invoke(messages_to_send)
             ai_response = response.content
             
-            # Guardar ambos mensajes en el historial local
-            self.conversation_history.append(human_message)
+            # Guardar ambos mensajes en el historial local (mensaje original del usuario, no el enhanced)
+            original_human_message = HumanMessage(content=user_message)
+            self.conversation_history.append(original_human_message)
             self.conversation_history.append(AIMessage(content=ai_response))
             
-            # Guardar en base de datos
+            # Guardar en base de datos (mensaje original del usuario)
             self.db_manager.add_message(self.current_session.id, "user", user_message)
             self.db_manager.add_message(self.current_session.id, "assistant", ai_response)
             
@@ -520,6 +527,146 @@ Responde siempre en español con un enfoque analítico, honesto y basado en dato
             error_message = f"Error al procesar el mensaje: {str(e)}"
             print(f"Error en chatbot: {error_message}")
             return "Lo siento, ocurrió un error al procesar tu mensaje. Por favor, intenta de nuevo."
+    
+    def _get_analytics_context(self) -> str:
+        """
+        Obtiene y formatea los datos analíticos para el contexto del modo ANALICEMOS.
+        
+        Returns:
+            str: Datos analíticos formateados para el contexto
+        """
+        try:
+            # Obtener datos analíticos del usuario
+            analytics_data = self.db_manager.get_user_analytics_data(self.user_id)
+            
+            if not analytics_data:
+                return "No hay datos disponibles para análisis."
+            
+            # Formatear los datos para el contexto
+            context_parts = []
+            
+            # Información del perfil
+            if analytics_data.get('user_profile'):
+                profile = analytics_data['user_profile']
+                context_parts.append("=== PERFIL DEL USUARIO ===")
+                if profile.get('full_name'):
+                    context_parts.append(f"Nombre: {profile['full_name']}")
+                if profile.get('experience_years'):
+                    context_parts.append(f"Años de experiencia en PM: {profile['experience_years']}")
+                if profile.get('target_exam_date'):
+                    context_parts.append(f"Fecha objetivo del examen: {profile['target_exam_date']}")
+                if profile.get('study_hours_daily'):
+                    context_parts.append(f"Horas de estudio diarias planificadas: {profile['study_hours_daily']}")
+                if profile.get('company'):
+                    context_parts.append(f"Empresa: {profile['company']}")
+                if profile.get('position'):
+                    context_parts.append(f"Cargo: {profile['position']}")
+                context_parts.append("")
+            
+            # Overview general
+            if analytics_data.get('overview'):
+                overview = analytics_data['overview']
+                context_parts.append("=== RESUMEN GENERAL ===")
+                context_parts.append(f"Total de sesiones: {overview.get('total_sessions', 0)}")
+                context_parts.append(f"Total de mensajes: {overview.get('total_messages', 0)}")
+                context_parts.append(f"Tiempo total de estudio estimado: {overview.get('study_time_hours', 0)} horas")
+                context_parts.append(f"Racha de estudio: {overview.get('study_streak_days', 0)} días consecutivos")
+                
+                if overview.get('sessions_by_mode'):
+                    context_parts.append("Distribución por modo:")
+                    for mode, count in overview['sessions_by_mode'].items():
+                        context_parts.append(f"  - {mode.upper()}: {count} sesiones")
+                context_parts.append("")
+            
+            # Datos de evaluaciones
+            if analytics_data.get('evaluations', {}).get('has_data'):
+                evaluations = analytics_data['evaluations']
+                context_parts.append("=== DATOS DE EVALUACIONES ===")
+                context_parts.append(f"Total de sesiones de EVALUEMOS: {evaluations.get('total_sessions', 0)}")
+                
+                if evaluations.get('sessions_detail'):
+                    context_parts.append("Detalle de sesiones:")
+                    for session in evaluations['sessions_detail']:
+                        context_parts.append(f"  - {session['date']}: {session['session_name']}")
+                        context_parts.append(f"    Duración: {session['duration_minutes']} minutos")
+                        context_parts.append(f"    Interacciones: {session['total_interactions']}")
+                        context_parts.append(f"    Preguntas estimadas: {session['questions_attempted']}")
+                        if session['topics_covered']:
+                            context_parts.append(f"    Temas cubiertos: {', '.join(session['topics_covered'])}")
+                context_parts.append("")
+            else:
+                context_parts.append("=== DATOS DE EVALUACIONES ===")
+                context_parts.append(analytics_data.get('evaluations', {}).get('message', 'No hay datos de evaluaciones'))
+                context_parts.append("")
+            
+            # Datos de simulacros
+            if analytics_data.get('simulations', {}).get('has_data'):
+                simulations = analytics_data['simulations']
+                context_parts.append("=== DATOS DE SIMULACROS ===")
+                context_parts.append(f"Total de sesiones de SIMULEMOS: {simulations.get('total_sessions', 0)}")
+                
+                if simulations.get('sessions_detail'):
+                    context_parts.append("Detalle de sesiones:")
+                    for session in simulations['sessions_detail']:
+                        context_parts.append(f"  - {session['date']}: {session['session_name']}")
+                        context_parts.append(f"    Duración: {session['duration_minutes']} minutos")
+                        context_parts.append(f"    Tipo de examen: {session['exam_type']}")
+                        context_parts.append(f"    Estado: {session['completion_status']}")
+                        context_parts.append(f"    Interacciones: {session['total_interactions']}")
+                context_parts.append("")
+            else:
+                context_parts.append("=== DATOS DE SIMULACROS ===")
+                context_parts.append(analytics_data.get('simulations', {}).get('message', 'No hay datos de simulacros'))
+                context_parts.append("")
+            
+            # Patrones de estudio
+            if analytics_data.get('study_patterns', {}).get('has_data'):
+                patterns = analytics_data['study_patterns']
+                context_parts.append("=== PATRONES DE ESTUDIO ===")
+                if patterns.get('best_study_hour') is not None:
+                    context_parts.append(f"Mejor hora de estudio: {patterns['best_study_hour']}:00")
+                if patterns.get('best_study_day'):
+                    context_parts.append(f"Mejor día de estudio: {patterns['best_study_day']}")
+                if patterns.get('preferred_mode'):
+                    context_parts.append(f"Modo preferido: {patterns['preferred_mode'].upper()}")
+                
+                if patterns.get('mode_distribution'):
+                    context_parts.append("Distribución de uso por modo:")
+                    for mode, count in patterns['mode_distribution'].items():
+                        context_parts.append(f"  - {mode.upper()}: {count} sesiones")
+                context_parts.append("")
+            else:
+                context_parts.append("=== PATRONES DE ESTUDIO ===")
+                context_parts.append("Insuficientes datos para identificar patrones")
+                context_parts.append("")
+            
+            # Tendencias de progreso
+            if analytics_data.get('progress_trends', {}).get('has_data'):
+                trends = analytics_data['progress_trends']
+                context_parts.append("=== TENDENCIAS DE PROGRESO ===")
+                context_parts.append(f"Total de sesiones de evaluación/simulacro: {trends.get('total_assessment_sessions', 0)}")
+                context_parts.append(f"Primera sesión: {trends.get('first_session_date', 'N/A')}")
+                context_parts.append(f"Última sesión: {trends.get('latest_session_date', 'N/A')}")
+                
+                if trends.get('session_frequency', {}).get('frequency_category'):
+                    freq_data = trends['session_frequency']
+                    context_parts.append(f"Frecuencia de estudio: {freq_data.get('frequency_category', 'N/A')}")
+                    if freq_data.get('sessions_per_week'):
+                        context_parts.append(f"Sesiones por semana: {freq_data['sessions_per_week']}")
+                
+                if trends.get('engagement_trend', {}).get('trend'):
+                    context_parts.append(f"Tendencia de participación: {trends['engagement_trend']['trend']}")
+                context_parts.append("")
+            else:
+                context_parts.append("=== TENDENCIAS DE PROGRESO ===")
+                context_parts.append(analytics_data.get('progress_trends', {}).get('message', 'Insuficientes datos para mostrar tendencias'))
+                context_parts.append("")
+            
+            return "\n".join(context_parts)
+            
+        except Exception as e:
+            print(f"Error al obtener contexto analítico: {str(e)}")
+            return "Error al cargar datos analíticos."
     
     def get_conversation_history(self) -> List[Tuple[str, str]]:
         """

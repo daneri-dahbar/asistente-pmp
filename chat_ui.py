@@ -6,7 +6,7 @@ Implementa un diseño moderno y responsivo para el Asistente PMP.
 import flet as ft
 from typing import List, Tuple
 from chatbot import ChatBot
-from db.models import User
+from db.models import User, get_local_datetime
 import threading
 import time
 import datetime
@@ -15,8 +15,8 @@ def create_chat_message(message: str, is_user: bool):
     """
     Función para crear mensajes individuales del chat con estilo Slack/Discord.
     """
-    # Obtener timestamp actual
-    timestamp = datetime.datetime.now().strftime("%H:%M")
+    # Obtener timestamp actual en GMT-3
+    timestamp = get_local_datetime().strftime("%H:%M")
     
     # Configurar avatar y nombre según el remitente
     if is_user:
@@ -393,7 +393,7 @@ Análisis profundo de casos prácticos
                 date_obj = datetime.fromisoformat(date_obj.replace('Z', '+00:00'))
             
             # Asegurar que ambas fechas estén en la misma zona horaria (sin timezone)
-            now = datetime.now()
+            now = get_local_datetime().replace(tzinfo=None)
             if date_obj.tzinfo:
                 date_obj = date_obj.replace(tzinfo=None)
             
@@ -1738,75 +1738,54 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         if self.chatbot and len(self.chat_container.controls) == 0:
             welcome_message = """¡Bienvenido al modo **ANALICEMOS CÓMO VAMOS**! 📊
 
-Vista **comprehensiva del progreso de estudio** y preparación para el examen PMP con analytics predictivos y recomendaciones personalizadas.
+**Análisis basado en datos reales** de tus sesiones de EVALUEMOS y SIMULEMOS. Obtengo insights de tu actividad real en la plataforma.
 
-## 📈 **Overview General:**
+## 📊 **Análisis Disponibles:**
 
-📊 **Readiness Score** - Porcentaje de preparación estimado
+### 📈 **Dashboard General**
+- **Resumen de actividad** - Sesiones totales, tiempo de estudio, racha de días
+- **Distribución por modo** - Cuánto usas cada modo (CHARLEMOS, ESTUDIEMOS, EVALUEMOS, SIMULEMOS)
+- **Progreso temporal** - Evolución de tu actividad en el tiempo
 
-🔥 **Study Streak** - Días consecutivos de estudio
+### 🎯 **Análisis de Evaluaciones**
+- **Sesiones de EVALUEMOS** - Detalle de cada sesión completada
+- **Temas cubiertos** - Áreas de conocimiento que has practicado
+- **Tiempo por sesión** - Duración y número de preguntas por sesión
+- **Patrones de práctica** - Frecuencia y consistencia en evaluaciones
 
-⏰ **Total Study Time** - Tiempo acumulado en la plataforma
+### 🏆 **Análisis de Simulacros**
+- **Sesiones de SIMULEMOS** - Historial de simulacros realizados
+- **Tipos de examen** - Completos, por tiempo, por dominio
+- **Estado de completitud** - Cuáles simulacros terminaste vs abandonaste
+- **Progreso en simulacros** - Evolución en la práctica de exámenes
 
-🎯 **Exam Countdown** - Días hasta fecha objetivo de examen
+### 🔍 **Patrones de Estudio**
+- **Mejores horarios** - Cuándo estudias más efectivamente
+- **Días preferidos** - Qué días de la semana eres más activo
+- **Modo favorito** - Cuál modo usas más frecuentemente
+- **Consistencia** - Regularidad en tus sesiones de estudio
 
-## 🎯 **Progress por Área:**
+### 📈 **Tendencias y Predicciones**
+- **Frecuencia de estudio** - Sesiones por semana y tendencias
+- **Engagement** - Si tu participación está mejorando o declinando
+- **Recomendaciones** - Sugerencias basadas en tus datos reales
 
-📚 **Visual Breakdown** - Dominios People/Process/Business Environment
-
-🗺️ **Heatmap de Conocimiento** - Verde=dominado, Amarillo=en progreso, Rojo=débil
-
-✅ **Completion Percentage** - Por cada área de conocimiento
-
-⏱️ **Time Invested** - Por área vs tiempo recomendado
-
-## 📊 **Performance Analytics:**
-
-📈 **Score Trends** - Gráfico de evolución de scores en el tiempo
-
-🎯 **Question Accuracy** - Porcentaje de aciertos por tipo de pregunta
-
-⚡ **Speed Analysis** - Tiempo promedio por pregunta vs objetivo
-
-📊 **Consistency Metrics** - Qué tan consistente es el performance
-
-## 🔍 **Study Patterns:**
-
-⏰ **Best Study Times** - Cuándo es más efectivo estudiando
-
-📚 **Session Effectiveness** - Correlación entre duración y retención
-
-💡 **Content Preferences** - Chat vs estudio estructurado vs evaluaciones
-
-🎯 **Weak Spot Patterns** - Patrones en errores comunes
-
-## 🔮 **Predictive Analytics:**
-
-🎯 **Exam Readiness Prediction** - Basado en todos los datos
-
-📋 **Recommended Study Plan** - Próximos pasos para mejorar score
-
-⏰ **Time to Readiness** - Estimación de cuándo estará listo
-
-⚠️ **Risk Assessment** - Probabilidad de fallar en áreas específicas
-
-## 💡 **Actionable Insights:**
-
-📚 **Study Recommendations** - "Enfócate en Risk Management esta semana"
-
-⏰ **Time Allocation** - "Dedica 60% más tiempo a Process domain"
-
-🎯 **Strategy Adjustments** - "Practica más simulacros completos"
-
-🎯 **Goal Setting** - Objetivos SMART para próxima semana/mes
+## ⚠️ **Importante:**
+Solo analizo datos que **realmente existen** en tu historial. Si no tienes suficientes sesiones de EVALUEMOS o SIMULEMOS, te lo indicaré claramente.
 
 **¿Qué análisis te gustaría ver?**
 
-• *"Mostrar mi progreso"* - Dashboard completo de progreso
+• *"Mostrar mi dashboard completo"* - Resumen general de toda tu actividad
 
-• *"Análisis de preparación"* - Evaluación detallada de readiness
+• *"Analizar mis evaluaciones"* - Focus en sesiones de EVALUEMOS
 
-• *"Recomendaciones de estudio"* - Plan personalizado de mejora"""
+• *"Revisar mis simulacros"* - Análisis de sesiones de SIMULEMOS
+
+• *"Patrones de estudio"* - Cuándo y cómo estudias mejor
+
+• *"Tendencias de progreso"* - Evolución temporal de tu preparación
+
+• *"Recomendaciones personalizadas"* - Sugerencias basadas en tus datos"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
