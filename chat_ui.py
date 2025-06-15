@@ -130,7 +130,7 @@ class ChatUI:
         # Contenedores principales
         self.chat_container = ft.Column(
             scroll=ft.ScrollMode.AUTO,
-            auto_scroll=True,
+            auto_scroll=False,  # Desactivado por defecto para permitir scroll manual
             spacing=5,
             expand=True,
             width=None,  # Se ajusta al contenedor padre
@@ -179,6 +179,26 @@ class ChatUI:
         self.is_sending = False
         self.page = None
         self.sidebar_visible = True
+        self.should_auto_scroll = False  # Controla cuándo hacer auto-scroll
+    
+    def scroll_to_bottom(self):
+        """
+        Hace scroll hacia abajo en el chat cuando es necesario.
+        """
+        if self.should_auto_scroll and self.page:
+            # Activar temporalmente auto_scroll
+            self.chat_container.auto_scroll = True
+            self.page.update()
+            # Desactivar auto_scroll después de un breve momento
+            def disable_auto_scroll():
+                import time
+                time.sleep(0.1)  # Esperar un poco para que se complete el scroll
+                self.chat_container.auto_scroll = False
+                self.should_auto_scroll = False
+                if self.page:
+                    self.page.update()
+            
+            threading.Thread(target=disable_auto_scroll, daemon=True).start()
     
     def initialize_chatbot(self, page: ft.Page):
         """
@@ -289,17 +309,23 @@ Análisis profundo de casos prácticos
             is_user = role == "user"
             message_widget = create_chat_message(content, is_user)
             self.chat_container.controls.append(message_widget)
+        
+        # Hacer scroll hacia abajo al cargar una conversación
+        if history:  # Solo si hay mensajes
+            self.should_auto_scroll = True
+            self.scroll_to_bottom()
     
     def load_conversations_list(self):
         """
-        Carga la lista de conversaciones del usuario en el sidebar.
+        Carga la lista de conversaciones del usuario en el sidebar, filtradas por modo actual.
         """
         if not self.chatbot:
             return
         
         try:
-            # Obtener sesiones del usuario
-            self.sessions_list = self.chatbot.db_manager.get_user_sessions(self.user.id)
+            # Obtener sesiones del usuario filtradas por modo actual
+            mode_filter = self.current_mode if self.current_mode else None
+            self.sessions_list = self.chatbot.db_manager.get_user_sessions(self.user.id, mode_filter)
             self.conversations_list.controls.clear()
             
             # Agregar cada conversación a la lista
@@ -313,6 +339,115 @@ Análisis profundo de casos prácticos
         except Exception as e:
             print(f"Error al cargar conversaciones: {e}")
     
+    def get_mode_colors(self, mode: str):
+        """
+        Retorna los colores asociados a cada modo.
+        """
+        mode_colors = {
+            "charlemos": {
+                "primary": ft.Colors.BLUE_600,
+                "light": ft.Colors.BLUE_100,
+                "text": ft.Colors.BLUE_800
+            },
+            "estudiemos": {
+                "primary": ft.Colors.GREEN_600,
+                "light": ft.Colors.GREEN_100,
+                "text": ft.Colors.GREEN_800
+            },
+            "evaluemos": {
+                "primary": ft.Colors.ORANGE_600,
+                "light": ft.Colors.ORANGE_100,
+                "text": ft.Colors.ORANGE_800
+            },
+            "simulemos": {
+                "primary": ft.Colors.PURPLE_600,
+                "light": ft.Colors.PURPLE_100,
+                "text": ft.Colors.PURPLE_800
+            },
+            "analicemos": {
+                "primary": ft.Colors.TEAL_600,
+                "light": ft.Colors.TEAL_100,
+                "text": ft.Colors.TEAL_800
+            }
+        }
+        return mode_colors.get(mode, {
+            "primary": ft.Colors.GREY_600,
+            "light": ft.Colors.GREY_100,
+            "text": ft.Colors.GREY_800
+        })
+    
+    def format_date(self, date_obj):
+        """
+        Formatea una fecha para mostrar en la interfaz estilo YouTube.
+        """
+        if not date_obj:
+            return "Sin fecha"
+        
+        try:
+            from datetime import datetime, timedelta
+            
+            # Si es string, convertir a datetime
+            if isinstance(date_obj, str):
+                date_obj = datetime.fromisoformat(date_obj.replace('Z', '+00:00'))
+            
+            # Asegurar que ambas fechas estén en la misma zona horaria (sin timezone)
+            now = datetime.now()
+            if date_obj.tzinfo:
+                date_obj = date_obj.replace(tzinfo=None)
+            
+            # Calcular diferencia
+            diff = now - date_obj
+            total_seconds = int(diff.total_seconds())
+            
+            # Si es negativo (fecha futura), mostrar "Ahora"
+            if total_seconds < 0:
+                return "Ahora"
+            
+            # Menos de 1 minuto
+            if total_seconds < 60:
+                return "Ahora"
+            
+            # Menos de 1 hora
+            elif total_seconds < 3600:
+                minutes = total_seconds // 60
+                return f"Hace {minutes} min"
+            
+            # Menos de 24 horas (mismo día)
+            elif diff.days == 0:
+                hours = total_seconds // 3600
+                return f"Hace {hours}h"
+            
+            # Ayer
+            elif diff.days == 1:
+                return "Ayer"
+            
+            # Hoy (si por alguna razón diff.days es 0 pero ya pasamos las horas)
+            elif diff.days == 0:
+                return "Hoy"
+            
+            # Menos de 1 semana
+            elif diff.days < 7:
+                return f"Hace {diff.days} día{'s' if diff.days > 1 else ''}"
+            
+            # Menos de 1 mes (aproximadamente 30 días)
+            elif diff.days < 30:
+                weeks = diff.days // 7
+                return f"Hace {weeks} semana{'s' if weeks > 1 else ''}"
+            
+            # Menos de 1 año (aproximadamente 365 días)
+            elif diff.days < 365:
+                months = diff.days // 30
+                return f"Hace {months} mes{'es' if months > 1 else ''}"
+            
+            # 1 año o más
+            else:
+                years = diff.days // 365
+                return f"Hace {years} año{'s' if years > 1 else ''}"
+                
+        except Exception as e:
+            print(f"Error al formatear fecha: {e}")
+            return "Sin fecha"
+    
     def create_conversation_item(self, session):
         """
         Crea un elemento de conversación para el sidebar.
@@ -320,16 +455,23 @@ Análisis profundo de casos prácticos
         try:
             is_current = self.current_session and session.id == self.current_session.id
             
+            # Obtener colores del modo
+            session_mode = getattr(session, 'mode', 'charlemos')
+            colors = self.get_mode_colors(session_mode)
+            
             # Obtener preview del último mensaje
             try:
                 messages = self.chatbot.db_manager.get_session_messages(session.id)
                 if messages:
                     last_message = messages[-1][1]  # content del último mensaje
-                    preview = last_message[:50] + "..." if len(last_message) > 50 else last_message
+                    preview = last_message[:45] + "..." if len(last_message) > 45 else last_message
                 else:
                     preview = "Nueva conversación"
             except:
                 preview = "Nueva conversación"
+            
+            # Formatear fecha de último uso
+            last_used_text = self.format_date(getattr(session, 'last_used_at', None))
         
             # Contenedor de la conversación
             conversation_container = ft.Container(
@@ -337,11 +479,14 @@ Análisis profundo de casos prácticos
                     controls=[
                         ft.Row(
                             controls=[
-                                ft.Text(
-                                    session.name,
-                                    size=14,
-                                    weight=ft.FontWeight.BOLD,
-                                    color=ft.Colors.WHITE if is_current else ft.Colors.BLACK87,
+                                ft.Container(
+                                    content=ft.Text(
+                                        session.name,
+                                        size=14,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=ft.Colors.WHITE if is_current else colors["text"],
+                                        overflow=ft.TextOverflow.ELLIPSIS
+                                    ),
                                     expand=True
                                 ),
                                 ft.Row(
@@ -370,13 +515,37 @@ Análisis profundo de casos prácticos
                             size=11,
                             color=ft.Colors.WHITE70 if is_current else ft.Colors.GREY_600,
                             overflow=ft.TextOverflow.ELLIPSIS
+                        ),
+                        ft.Row(
+                            controls=[
+                                ft.Container(
+                                    content=ft.Text(
+                                        session_mode.upper(),
+                                        size=9,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=colors["primary"] if not is_current else ft.Colors.WHITE
+                                    ),
+                                    bgcolor=colors["light"] if not is_current else ft.Colors.WHITE24,
+                                    padding=ft.padding.symmetric(horizontal=6, vertical=2),
+                                    border_radius=10
+                                ),
+                                ft.Text(
+                                    last_used_text,
+                                    size=9,
+                                    color=ft.Colors.WHITE60 if is_current else ft.Colors.GREY_500,
+                                    expand=True,
+                                    text_align=ft.TextAlign.RIGHT
+                                )
+                            ],
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                         )
                     ],
-                    spacing=2
+                    spacing=4
                 ),
                 padding=ft.padding.all(10),
                 margin=ft.margin.symmetric(0, 2),
-                bgcolor=ft.Colors.BLUE_600 if is_current else ft.Colors.TRANSPARENT,
+                bgcolor=colors["primary"] if is_current else colors["light"],
+                border=ft.border.all(1, colors["primary"]) if not is_current else None,
                 border_radius=8,
                 on_click=lambda e, s=session: self.switch_conversation(s),
                 ink=True
@@ -411,6 +580,10 @@ Análisis profundo de casos prácticos
             
             # Recargar la interfaz
             self.load_conversation_history()
+            
+            # Hacer scroll hacia abajo al cambiar de conversación
+            self.should_auto_scroll = True
+            self.scroll_to_bottom()
             
             if self.page:
                 self.page.update()
@@ -749,6 +922,10 @@ Análisis profundo de casos prácticos
         self.send_button.disabled = True
         self.message_input.disabled = True
         
+        # Hacer scroll hacia abajo al enviar mensaje
+        self.should_auto_scroll = True
+        self.scroll_to_bottom()
+        
         e.page.update()
         
         # Enviar mensaje en hilo separado
@@ -762,6 +939,10 @@ Análisis profundo de casos prácticos
                 # Mostrar respuesta de la IA
                 ai_message_widget = create_chat_message(response, False)
                 self.chat_container.controls.append(ai_message_widget)
+                
+                # Hacer scroll hacia abajo al recibir respuesta
+                self.should_auto_scroll = True
+                self.scroll_to_bottom()
                 
                 # Actualizar lista de conversaciones (para mostrar el nuevo mensaje)
                 self.load_conversations_list()
@@ -849,6 +1030,10 @@ Análisis profundo de casos prácticos
             
             # Recargar lista de conversaciones
             self.load_conversations_list()
+            
+            # Hacer scroll hacia abajo al crear nueva conversación
+            self.should_auto_scroll = True
+            self.scroll_to_bottom()
             
             if self.page:
                 self.page.update()
@@ -1155,6 +1340,9 @@ Análisis profundo de casos prácticos
             self.chat_container.controls.clear()
             # Limpiar la sesión actual para que se cree una nueva cuando sea necesario
             self.current_session = None
+            
+            # Recargar las conversaciones filtradas por el nuevo modo
+            self.load_conversations_list()
             
             # Actualizar la interfaz según el modo
             if mode == "charlemos":
