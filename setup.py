@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de configuración automatizada para ChatGPT Desktop App con Autenticación.
+Script de configuración automatizada para Asistente para Certificación PMP con Autenticación.
 Configura el entorno, instala dependencias y prepara la aplicación.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 def print_header():
     """Imprime el header de la aplicación"""
     print("=" * 60)
-    print("🤖 ChatGPT Desktop App - Setup con Autenticación")
+    print("🎓 Asistente para Certificación PMP - Setup con Autenticación")
     print("=" * 60)
     print("📦 Configurando entorno y dependencias...")
     print()
@@ -87,7 +87,7 @@ def create_env_file():
     
     try:
         with open(env_file, "w", encoding="utf-8") as f:
-            f.write("# Configuración de ChatGPT Desktop App\n")
+            f.write("# Configuración de Asistente para Certificación PMP\n")
             f.write("# Reemplaza 'tu_clave_api_aqui' con tu clave real de OpenAI\n")
             f.write("OPENAI_API_KEY=tu_clave_api_aqui\n")
             f.write("\n")

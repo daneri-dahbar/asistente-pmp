@@ -1,6 +1,6 @@
-# 🤖 ChatGPT Desktop App con Flet - Con Autenticación
+# 🎓 Asistente para Certificación PMP - Con Autenticación
 
-Una aplicación de escritorio de chat estilo ChatGPT desarrollada en Python utilizando Flet para la interfaz gráfica, LangChain para el manejo de conversaciones y OpenAI GPT-4o-mini como modelo de lenguaje. Ahora incluye un sistema completo de autenticación de usuarios.
+Una aplicación de escritorio especializada en preparación para la certificación PMP desarrollada en Python utilizando Flet para la interfaz gráfica, LangChain para el manejo de conversaciones y OpenAI GPT-4o-mini como modelo de lenguaje. Incluye un sistema completo de autenticación de usuarios y múltiples modos de estudio especializados.
 
 ## ✨ Características
 
@@ -14,7 +14,7 @@ Una aplicación de escritorio de chat estilo ChatGPT desarrollada en Python util
 - 🧠 **Integración con OpenAI** GPT-4o-mini a través de LangChain
 - 💾 **Persistencia local** con SQLite y SQLAlchemy
 - 📝 **Historial de conversaciones** que se mantiene entre sesiones por usuario
-- 🎯 **Interfaz estilo ChatGPT** con mensajes alineados
+- 🎯 **Interfaz moderna especializada** para estudio PMP con mensajes alineados
 - 📦 **Preparado para empaquetado** con PyInstaller
 
 ## 📋 Requisitos Previos
@@ -149,7 +149,7 @@ Para crear un ejecutable independiente:
 
 2. **Crear el ejecutable**
    ```bash
-   pyinstaller --onefile --windowed --name "ChatGPT-App" main.py
+   pyinstaller --onefile --windowed --name "Asistente-PMP" main.py
    ```
 
 3. **Con archivo .spec personalizado** (recomendado):
@@ -198,7 +198,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='ChatGPT-App',
+    name='Asistente-PMP',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -236,7 +236,7 @@ class AuthUI:
                         color=ft.Colors.BLUE_600
                     ),
                     ft.Text(
-                        "ChatGPT Assistant",
+                        "Asistente para Certificación PMP",
                         size=24,
                         weight=ft.FontWeight.BOLD,
                         color=ft.Colors.BLUE_900,

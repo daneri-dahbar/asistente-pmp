@@ -1,5 +1,5 @@
 """
-Punto de entrada principal para la aplicación de Chat con ChatGPT.
+Punto de entrada principal para el Asistente para Certificación PMP.
 Aplicación de escritorio con autenticación creada con Flet, LangChain y OpenAI.
 
 Para ejecutar: python main.py
@@ -113,7 +113,7 @@ class MainApp:
         self.page = page
         
         # Configuración inicial de la página
-        page.title = "ChatGPT Assistant"
+        page.title = "Asistente para Certificación PMP"
         page.window_width = 800
         page.window_height = 600
         page.window_min_width = 400
@@ -144,7 +144,7 @@ def main():
             sys.exit(1)
         
         if not app.is_executable:
-            print("🚀 Iniciando ChatGPT con Flet...")
+            print("🚀 Iniciando Asistente para Certificación PMP...")
             print("📦 Versión: 2.0.0 con Autenticación")
             print("🔗 Powered by OpenAI, LangChain & Flet")
             print("-" * 50)
@@ -155,7 +155,7 @@ def main():
         # Lanzar la aplicación
         ft.app(
             target=app.main,
-            name="ChatGPT Assistant",
+            name="Asistente para Certificación PMP",
             assets_dir=assets_path
         )
         

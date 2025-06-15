@@ -1,6 +1,6 @@
 """
 Interfaz de usuario para la aplicación de chat usando Flet.
-Implementa un diseño moderno y responsivo estilo ChatGPT.
+Implementa un diseño moderno y responsivo para el Asistente PMP.
 """
 
 import flet as ft
@@ -1986,7 +1986,7 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
                                 on_click=self.toggle_sidebar
                             ),
                             ft.Text(
-                                "🤖 ChatGPT Assistant",
+                                "🎓 Asistente para Certificación PMP",
                                 size=18,
                                 weight=ft.FontWeight.BOLD,
                                 color=ft.Colors.WHITE
@@ -2364,7 +2364,7 @@ Vista **comprehensiva del progreso de estudio** y preparación para el examen PM
                                         on_click=self.toggle_sidebar
                                     ),
                                     ft.Text(
-                                        "🤖 ChatGPT Assistant",
+                                        "🎓 Asistente para Certificación PMP",
                                         size=18,
                                         weight=ft.FontWeight.BOLD,
                                         color=ft.Colors.WHITE

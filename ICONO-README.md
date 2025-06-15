@@ -2,7 +2,7 @@
 
 ## 📁 Archivos Necesarios
 
-Para cambiar el ícono de tu aplicación ChatGPT Assistant, necesitas preparar los siguientes archivos:
+Para cambiar el ícono de tu aplicación Asistente para Certificación PMP, necesitas preparar los siguientes archivos:
 
 ### 1. Para la Ventana de la Aplicación
 - **Archivo**: `assets/icon.png`
