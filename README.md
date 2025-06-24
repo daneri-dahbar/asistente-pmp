@@ -325,6 +325,209 @@ Una aplicación de escritorio especializada en preparación para la certificaci�
 3. **Recuperación automática**: Reintento de operaciones fallidas
 4. **Logs de debug**: Información técnica para resolución de problemas
 
+## 🏗️ Arquitectura de la Aplicación
+
+La aplicación sigue una arquitectura modular de capas que separa claramente las responsabilidades y facilita el mantenimiento y escalabilidad del código.
+
+### 🎯 **Arquitectura General**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    APLICACIÓN PRINCIPAL                     │
+├─────────────────────────────────────────────────────────────┤
+│  main.py - Punto de entrada y coordinador de la aplicación │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CAPA DE       │    │   CAPA DE       │    │   CAPA DE       │
+│  PRESENTACIÓN   │◄──►│   LÓGICA DE     │◄──►│     DATOS       │
+│                 │    │    NEGOCIO      │    │                 │
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│  • auth_ui.py   │    │  • auth.py      │    │  • db/models.py │
+│  • chat_ui.py   │    │  • chatbot.py   │    │  • SQLite DB    │
+│                 │    │                 │    │  • SQLAlchemy   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 📦 **Componentes Principales**
+
+#### **1. Aplicación Principal (`main.py`)**
+- **Función**: Coordinador central y punto de entrada único
+- **Responsabilidades**:
+  - Gestión del ciclo de vida de la aplicación
+  - Verificación del entorno y configuración
+  - Coordinación entre autenticación y chat
+  - Manejo de transiciones entre estados (login ↔ chat)
+  - Configuración de la ventana principal de Flet
+
+```python
+class MainApp:
+    - check_environment()     # Verifica API keys y configuración
+    - on_auth_success()       # Callback de autenticación exitosa
+    - on_logout()            # Callback de logout
+    - show_auth()            # Muestra interfaz de autenticación
+    - show_chat()            # Muestra interfaz de chat
+```
+
+#### **2. Capa de Presentación (UI)**
+
+**Interfaz de Autenticación (`auth_ui.py`)**
+- **Función**: Manejo de registro y login de usuarios
+- **Características**:
+  - Formularios responsivos con validación en tiempo real
+  - Indicador de fortaleza de contraseñas
+  - Animaciones de carga y transiciones suaves
+  - Cambio dinámico entre modo login y registro
+
+```python
+class AuthUI:
+    - toggle_mode()          # Cambio entre login/registro
+    - on_password_change()   # Validación de fortaleza
+    - on_submit()           # Procesamiento de formularios
+    - clear_fields()        # Limpieza de datos
+```
+
+**Interfaz de Chat (`chat_ui.py`)**
+- **Función**: Interfaz principal de la aplicación
+- **Características**:
+  - Chat en tiempo real con mensajes tipo Slack/Discord
+  - Sidebar colapsable con lista de conversaciones
+  - Navegación entre 5 modos especializados de estudio
+  - Gestión de perfil de usuario integrada
+  - Responsive design con auto-scroll inteligente
+
+```python
+class ChatUI:
+    - send_message()         # Envío de mensajes
+    - switch_mode()          # Cambio entre modos de estudio
+    - load_conversations()   # Carga de historial
+    - show_profile_form()    # Gestión de perfil
+    - toggle_sidebar()       # Control de navegación
+```
+
+#### **3. Capa de Lógica de Negocio**
+
+**Gestión de Autenticación (`auth.py`)**
+- **Función**: Validación y seguridad de usuarios
+- **Características**:
+  - Hashing seguro con SHA-256 + salt único
+  - Validación robusta de datos de entrada
+  - Análisis de fortaleza de contraseñas
+  - Gestión de sesiones de usuario
+
+```python
+class AuthManager:
+    - register_user()           # Registro con validación
+    - login_user()             # Autenticación segura
+    - _validate_registration()  # Validación de datos
+    - get_password_strength()   # Análisis de seguridad
+```
+
+**Motor de Chatbot (`chatbot.py`)**
+- **Función**: Integración con OpenAI y gestión de conversaciones
+- **Características**:
+  - Integración con LangChain para gestión avanzada de conversaciones
+  - 5 modos especializados con prompts adaptativos
+  - Memoria de conversación con persistencia
+  - Analytics de progreso y rendimiento del usuario
+
+```python
+class ChatBot:
+    - send_message()              # Procesamiento de mensajes
+    - _get_system_message()       # Configuración por modo
+    - _load_conversation_history() # Carga de historial
+    - _get_analytics_context()    # Contexto para análisis
+```
+
+#### **4. Capa de Datos**
+
+**Modelos de Base de Datos (`db/models.py`)**
+- **Función**: Persistencia y estructura de datos
+- **Características**:
+  - ORM con SQLAlchemy para operaciones robustas
+  - Modelos relacionales: User ↔ ChatSession ↔ ChatMessage
+  - Timestamps en zona horaria local (GMT-3)
+  - Análisis avanzado de datos de estudio
+
+```python
+# Modelos principales:
+class User:              # Usuarios y perfiles
+class ChatSession:       # Sesiones de conversación
+class ChatMessage:       # Mensajes individuales
+class DatabaseManager:   # Gestión de operaciones
+```
+
+### 🔄 **Flujo de Datos**
+
+#### **Flujo de Autenticación**
+```
+1. auth_ui.py → 2. auth.py → 3. db/models.py
+   (formulario)   (validación)   (persistencia)
+       ↓              ↓              ↓
+4. main.py ← 5. auth_ui.py ← 6. auth.py
+   (callback)    (resultado)    (usuario)
+```
+
+#### **Flujo de Mensajes de Chat**
+```
+1. chat_ui.py → 2. chatbot.py → 3. OpenAI API
+   (input usuario)  (procesamiento)   (IA response)
+        ↓               ↓               ↓
+5. chat_ui.py ← 4. db/models.py ← 3. chatbot.py
+   (display)      (persistencia)    (respuesta)
+```
+
+### 🛡️ **Seguridad y Validación**
+
+#### **Seguridad de Autenticación**
+- **Hash SHA-256** con salt único por usuario
+- **Validación de entrada** con expresiones regulares
+- **Sanitización** de datos de usuario
+- **Gestión segura** de sesiones en memoria
+
+#### **Validación de Datos**
+- **Frontend**: Validación en tiempo real en formularios
+- **Backend**: Validación robusta antes de persistencia
+- **Base de datos**: Constraints y relaciones bien definidas
+- **API**: Verificación de API keys y manejo de errores
+
+### ⚡ **Optimizaciones y Rendimiento**
+
+#### **Gestión de Memoria**
+- **Lazy loading** de conversaciones
+- **Paginación** automática de mensajes largos
+- **Cleanup** automático de sesiones inactivas
+- **Cache inteligente** de datos de usuario
+
+#### **Experiencia de Usuario**
+- **Threading** para operaciones no bloqueantes
+- **Auto-scroll inteligente** solo cuando es necesario
+- **Loading states** informativos
+- **Error handling** graceful con mensajes útiles
+
+### 🔧 **Extensibilidad**
+
+#### **Agregar Nuevos Modos**
+1. **Definir prompt** en `chatbot.py` → `_get_system_message_for_mode()`
+2. **Crear UI específica** en `chat_ui.py` → `update_[modo]_mode()`
+3. **Agregar navegación** en `create_navigation_menu()`
+4. **Actualizar base de datos** si se requieren nuevos campos
+
+#### **Integrar Nuevos Modelos de IA**
+1. **Modificar configuración** en `chatbot.py`
+2. **Ajustar parámetros** de temperatura y modelo
+3. **Adaptar prompts** según capacidades del modelo
+4. **Actualizar manejo de errores** específicos
+
+#### **Expandir Base de Datos**
+1. **Definir nuevos modelos** en `db/models.py`
+2. **Crear migraciones** si es necesario
+3. **Actualizar DatabaseManager** con nuevas operaciones
+4. **Modificar UI** para manejar nuevos datos
+
+Esta arquitectura modular garantiza que la aplicación sea mantenible, escalable y fácil de entender, siguiendo principios de separación de responsabilidades y bajo acoplamiento entre componentes.
+
 ## 📋 Requisitos Previos
 
 - Python 3.9 o superior
