@@ -1,0 +1,29 @@
+# Dependencias para testing del Asistente PMP
+
+# Framework de testing principal
+pytest>=7.4.0
+
+# Plugins útiles para pytest
+pytest-cov>=4.1.0          # Cobertura de código
+pytest-mock>=3.11.0        # Mocking mejorado
+pytest-xdist>=3.3.0        # Ejecución paralela de tests
+pytest-html>=3.2.0         # Reportes HTML
+pytest-json-report>=1.5.0  # Reportes JSON
+
+# Herramientas de testing adicionales
+coverage>=7.3.0            # Cobertura de código independiente
+factory-boy>=3.3.0         # Generación de datos de prueba
+faker>=19.3.0              # Datos falsos para testing
+freezegun>=1.2.0           # Mocking de fechas y tiempo
+
+# Herramientas de análisis de código
+flake8>=6.0.0              # Linter de código
+black>=23.7.0              # Formateador de código
+isort>=5.12.0              # Ordenamiento de imports
+
+# Herramientas de seguridad
+bandit>=1.7.5              # Análisis de seguridad
+safety>=2.3.0              # Verificación de vulnerabilidades
+
+# Herramientas de documentación de tests
+# pytest-docstring>=0.1.0    # Validación de docstrings en tests (no disponible) 

@@ -70,6 +70,6 @@ logs/
 *.bak
 *.backup
 
-# Archivos de prueba
-test_*.py
-*_test.py 
+# Archivos de prueba (permitir en carpeta tests/)
+# test_*.py
+# *_test.py 
