@@ -147,13 +147,11 @@ class ChatUI:
         # Campo de entrada de mensajes
         self.message_input = ft.TextField(
             hint_text="Escribe tu mensaje aquí...",
-            multiline=True,
-            min_lines=1,
-            max_lines=5,
+            multiline=False,  # Cambiar a single line para que Enter envíe el mensaje
             filled=True,
             border_radius=25,
             content_padding=ft.padding.symmetric(15, 10),
-            on_submit=self.send_message,
+            on_submit=self.handle_submit,
             autofocus=False  # No hacer autofocus por defecto
         )
         
@@ -182,6 +180,14 @@ class ChatUI:
         self.sidebar_visible = True
         self.should_auto_scroll = False  # Controla cuándo hacer auto-scroll
         self.showing_profile = False  # Controla si se está mostrando el formulario de perfil
+    
+    def handle_submit(self, e):
+        """
+        Maneja el envío de mensajes desde el campo de texto.
+        Enter = Enviar mensaje
+        El campo es single line para que Enter siempre envíe el mensaje.
+        """
+        self.send_message(e)
     
     def scroll_to_bottom(self):
         """
@@ -1339,13 +1345,11 @@ Análisis profundo de casos prácticos
             # Recrear el message_input con autofocus para el nuevo modo
             self.message_input = ft.TextField(
                 hint_text="Escribe tu mensaje aquí...",
-                multiline=True,
-                min_lines=1,
-                max_lines=5,
+                multiline=False,  # Cambiar a single line para que Enter envíe el mensaje
                 filled=True,
                 border_radius=25,
                 content_padding=ft.padding.symmetric(15, 10),
-                on_submit=self.send_message,
+                on_submit=self.handle_submit,
                 autofocus=True  # Hacer autofocus cuando se activa un modo
             )
             
@@ -1804,10 +1808,10 @@ Solo analizo datos que **realmente existen** en tu historial. Si no tienes sufic
             height=None  # Se ajusta al contenido
         )
         
-        # Área de entrada de mensajes (solo si hay un modo activo y no se está mostrando el perfil)
+        # Área de entrada de mensajes (siempre visible, excepto cuando se muestra el perfil)
         chat_controls = [chat_area]
         
-        if not self.showing_profile and self.current_mode:
+        if not self.showing_profile:
             input_area = ft.Container(
                 content=ft.Column(
                     controls=[
