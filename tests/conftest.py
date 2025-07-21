@@ -74,7 +74,7 @@ def sample_chat_session(db_manager, sample_user):
     session = db_manager.create_chat_session(
         user_id=sample_user.id,
         mode="CHARLEMOS",
-        title="Sesión de Prueba"
+        name="Sesión de Prueba"
     )
     return session
 

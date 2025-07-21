@@ -27,7 +27,7 @@ def create_chat_message(message: str, is_user: bool):
     else:
         avatar_icon = ft.Icons.SMART_TOY
         avatar_color = ft.Colors.GREEN_600
-        username = "PMP Assistant"
+        username = "Asistente PMP"
         username_color = ft.Colors.GREEN_700
     
     # Avatar circular
@@ -180,6 +180,11 @@ class ChatUI:
         self.sidebar_visible = True
         self.should_auto_scroll = False  # Controla cuándo hacer auto-scroll
         self.showing_profile = False  # Controla si se está mostrando el formulario de perfil
+        self.cronometro_visible = False
+        self.cronometro_segundos = 0
+        self.cronometro_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700)
+        self._cronometro_thread = None
+        self._cronometro_running = False
     
     def handle_submit(self, e):
         """
@@ -1340,7 +1345,11 @@ Análisis profundo de casos prácticos
         Cambia el modo de la aplicación.
         """
         if self.current_mode != mode:
+            # Detener cronómetro si cambiamos de modo
+            if self.current_mode in ["simulemos", "evaluemos"]:
+                self.stop_cronometro()
             self.current_mode = mode
+            # Ya NO iniciar cronómetro aquí
             
             # Recrear el message_input con autofocus para el nuevo modo
             self.message_input = ft.TextField(
@@ -1400,87 +1409,7 @@ Análisis profundo de casos prácticos
         
         # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
         if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Bienvenido al modo **CHARLEMOS**! 💬
-
-**Conversación libre y natural** sobre cualquier tema PMP con tu tutor personal de IA. Perfecto para clarificar dudas, explorar conceptos y tener discusiones profundas sobre Project Management.
-
-## 🎯 **¿Qué puedes hacer aquí?**
-
-### **💭 Preguntas Abiertas:**
-• Conceptos fundamentales del PMBOK Guide
-
-• Diferencias entre metodologías y frameworks
-
-• Aplicación práctica de teorías PMP
-
-• Casos de estudio y ejemplos reales
-
-### **🔍 Clarificaciones y Dudas:**
-• "No entiendo la diferencia entre schedule y timeline"
-
-• "¿Qué significa exactamente 'stakeholder engagement'?"
-
-• "Explícame como si tuviera 5 años qué es un PMO"
-
-• "¿Cómo se relaciona Agile con el PMBOK tradicional?"
-
-### **🌟 Exploración de Temas:**
-• Gestión de riesgos en proyectos complejos
-
-• Liderazgo y manejo de equipos
-
-• Comunicación efectiva con stakeholders
-
-• Integración de procesos y áreas de conocimiento
-
-## ✨ **Características Especiales:**
-
-🎓 **Explicaciones Adaptativas** - Me adapto a tu nivel de conocimiento
-
-🔄 **Re-explicaciones** - "Explícamelo de otra forma" o "más simple"
-
-🎯 **Analogías Personalizadas** - "Dame una analogía" para conceptos complejos
-
-🔍 **Profundización Inteligente** - "Profundiza en esto" para más detalles
-
-💡 **Ejemplos Prácticos** - Casos reales y situaciones del mundo laboral
-
-🎨 **Múltiples Perspectivas** - Diferentes enfoques para el mismo concepto
-
-## 🚀 **Modos de Conversación:**
-
-### **📚 Modo Explicativo:**
-• Definiciones claras y estructuradas
-
-• Paso a paso de procesos complejos
-
-• Frameworks y metodologías detalladas
-
-### **🤔 Modo Socrático:**
-• Te hago preguntas para que descubras conceptos
-
-• Análisis crítico de situaciones
-
-• Desarrollo del pensamiento estratégico
-
-### **💼 Modo Práctico:**
-• Aplicación en escenarios reales
-
-• Resolución de problemas específicos
-
-• Consejos para el día a día profesional
-
-## 🎪 **Ejemplos de Conversaciones:**
-
-**Conceptual:** "¿Cuál es la diferencia real entre un programa y un proyecto?"
-
-**Práctico:** "Mi stakeholder principal cambió los requisitos a mitad del proyecto, ¿qué hago?"
-
-**Estratégico:** "¿Cómo puedo mejorar la madurez organizacional en gestión de proyectos?"
-
-**Comparativo:** "¿Cuándo usar Waterfall vs Agile vs Híbrido?"
-
-¡Empecemos a charlar! ¿Qué tema de PMP te interesa explorar hoy?"""
+            welcome_message = """¡Bienvenido al modo **CHARLEMOS**! 💬\n\n**Conversación libre y natural** sobre cualquier tema de gestión de proyectos y PMP. Ideal para aclarar dudas, explorar conceptos y conversar sobre experiencias reales.\n\n## 🎯 **¿Qué puedes hacer aquí?**\n\n### **💭 Preguntas Abiertas:**\n• Conceptos fundamentales del PMBOK\n• Diferencias entre metodologías y enfoques\n• Aplicación práctica de la gestión de proyectos\n• Casos de estudio y ejemplos reales\n\n### **🔍 Clarificaciones y Dudas:**\n• "No entiendo la diferencia entre cronograma y calendario"\n• "¿Qué significa exactamente 'interesados'?"\n• "Explícame como si tuviera 5 años qué es una PMO"\n• "¿Cómo se relaciona Ágil con el PMBOK tradicional?"\n\n### **🌟 Exploración de Temas:**\n• Gestión de riesgos en proyectos\n• Liderazgo y manejo de equipos\n• Comunicación efectiva con interesados\n• Integración de procesos y áreas de conocimiento\n\n## ✨ **Características Especiales:**\n\n🎓 **Explicaciones adaptadas** a tu nivel\n🔄 **Re-explicaciones** con diferentes ejemplos\n🎯 **Analogías** para conceptos complejos\n🔍 **Profundización** cuando lo necesites\n💡 **Ejemplos prácticos** y situaciones reales\n\n¡Empecemos a charlar! ¿Qué tema de gestión de proyectos te interesa explorar hoy?"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
@@ -1499,61 +1428,7 @@ Análisis profundo de casos prácticos
         
         # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
         if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Bienvenido al modo **ESTUDIEMOS UN TEMA**! 📚
-
-Aquí tendrás sesiones de estudio **estructuradas y adaptativas** para dominar cualquier área del PMBOK Guide.
-
-## 🎯 **Cómo funciona:**
-
-**1. Selecciona tu tema** - Dime qué área quieres estudiar
-
-**2. Configuramos la sesión** - Nivel, objetivos y tiempo disponible  
-
-**3. Sesión guiada** - Te guío paso a paso con metodología probada
-
-## 📚 **Áreas disponibles:**
-
-### **People Domain:**
-• Leadership & Team Management
-
-• Stakeholder Engagement
-
-### **Process Domain:**
-• Risk Management
-
-• Schedule Management
-
-• Cost Management
-
-• Quality Management  
-
-• Resource Management
-
-• Communications Management
-
-• Procurement Management
-
-• Scope Management
-
-• Integration Management
-
-### **Business Environment:**
-• Strategy & Governance
-
-• Compliance & Benefits Realization
-
-## ✨ **Características especiales:**
-
-🎓 **Ritmo personalizado** - Controlas la velocidad
-
-📝 **Checkpoints** - Verifico tu comprensión
-
-📌 **Note-taking** - Te sugiero puntos clave
-
-🔖 **Bookmarks** - Marcamos secciones importantes
-
-**¿Qué tema te gustaría estudiar hoy?** 
-Ejemplo: *"Quiero estudiar Risk Management"* o *"Necesito aprender Schedule Management"*"""
+            welcome_message = """¡Bienvenido al modo **ESTUDIEMOS UN TEMA**! 📚\n\nAquí tendrás sesiones de estudio **estructuradas y adaptativas** para dominar cualquier área del PMBOK.\n\n## 🎯 **¿Cómo funciona?**\n\n1. Selecciona tu tema: dime qué área quieres estudiar\n2. Configuramos la sesión: nivel, objetivos y tiempo disponible\n3. Sesión guiada: te acompaño paso a paso\n\n## 📚 **Áreas disponibles:**\n\n### **Personas:**\n• Liderazgo y gestión de equipos\n• Relación con interesados\n\n### **Procesos:**\n• Gestión de riesgos\n• Gestión del cronograma\n• Gestión de costos\n• Gestión de la calidad\n• Gestión de recursos\n• Gestión de las comunicaciones\n• Gestión de adquisiciones\n• Gestión del alcance\n• Integración\n\n### **Entorno de Negocio:**\n• Estrategia y gobernanza\n• Cumplimiento y beneficios\n\n## ✨ **Características especiales:**\n\n🎓 Ritmo personalizado\n📝 Verificación de comprensión\n📌 Sugerencias de puntos clave\n🔖 Marcadores de secciones importantes\n\n**¿Qué tema te gustaría estudiar hoy?**\nEjemplo: "Quiero estudiar gestión de riesgos" o "Necesito aprender cronograma"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
@@ -1572,76 +1447,7 @@ Ejemplo: *"Quiero estudiar Risk Management"* o *"Necesito aprender Schedule Mana
         
         # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
         if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Bienvenido al modo **EVALUEMOS TU CONOCIMIENTO**! 📊
-
-Identifica tus **fortalezas y debilidades** con evaluaciones adaptativas y práctica específica para el examen PMP.
-
-## 🎯 **Tipos de Evaluación:**
-
-### **📋 Diagnóstico Inicial:**
-• **Assessment completo** - 50 preguntas que cubren todo el PMBOK
-
-• **Identificación de gaps** - Análisis de áreas débiles  
-
-• **Reporte personalizado** - Plan de estudio recomendado
-
-### **🎯 Práctica por Área:**
-• **Selección específica** - Focus en un tema
-
-• **Sesiones cortas** - 10-15 preguntas por sesión
-
-• **Feedback inmediato** - Explicación detallada de cada respuesta
-
-• **Adaptive testing** - Dificultad se ajusta según performance
-
-### **💪 Práctica por Debilidades:**
-• **Target weak areas** - Solo preguntas de áreas débiles
-
-• **Reinforcement learning** - Repite conceptos hasta dominarlos
-
-• **Progress tracking** - Muestra mejora en tiempo real
-
-## 📚 **Dominios Evaluados:**
-
-**People Domain** | **Process Domain** | **Business Environment**
-
-• Leadership | • Risk Management | • Strategy & Governance
-
-• Team Management | • Schedule Management | • Compliance
-
-• Stakeholder Engagement | • Cost Management | • Benefits Realization
-
-| • Quality Management |
-
-| • Resource Management |
-
-| • Communications |
-
-| • Procurement |
-
-| • Scope Management |
-
-| • Integration |
-
-## ✨ **Características Especiales:**
-
-📝 **Estilo PMP real** - Preguntas largas con escenarios
-
-🔍 **Explicaciones detalladas** - Por qué cada opción es correcta/incorrecta
-
-📖 **Referencias al PMBOK** - Dónde encontrar más información
-
-⏱️ **Time tracking** - Mide tiempo para preparar examen real
-
-📊 **Analytics** - Score por dominio y tendencias temporales
-
-**¿Qué tipo de evaluación prefieres?**
-
-• *"Diagnóstico completo"* - Assessment inicial completo
-
-• *"Evaluar Risk Management"* - Práctica por área específica  
-
-• *"Práctica por debilidades"* - Focus en áreas débiles"""
+            welcome_message = """¡Bienvenido al modo **EVALUEMOS TU CONOCIMIENTO**! 📊\n\nIdentifica tus **fortalezas y debilidades** con evaluaciones adaptativas y práctica específica para el examen PMP.\n\n## 🎯 **Tipos de Evaluación:**\n\n### **📋 Diagnóstico Inicial:**\n• Diagnóstico completo - 50 preguntas que cubren todo el PMBOK\n• Identificación de áreas débiles\n• Reporte personalizado con plan de estudio\n\n### **🎯 Práctica por Área:**\n• Selección de un tema específico\n• Sesiones cortas de 10-15 preguntas\n• Retroalimentación inmediata y detallada\n• Dificultad adaptativa según tu desempeño\n\n### **💪 Práctica por Debilidades:**\n• Solo preguntas de áreas débiles\n• Repetición de conceptos hasta dominarlos\n• Seguimiento de tu progreso en tiempo real\n\n## 📚 **Dominios Evaluados:**\n• Personas\n• Procesos\n• Entorno de Negocio\n\n## ✨ **Características Especiales:**\n\n📝 Preguntas tipo examen real\n🔍 Explicaciones detalladas\n📖 Referencias al PMBOK\n⏱️ Medición de tiempo\n📊 Análisis de resultados\n\n**¿Qué tipo de evaluación prefieres?**\n• "Diagnóstico completo"\n• "Evaluar gestión de riesgos"\n• "Práctica por debilidades"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
@@ -1660,68 +1466,7 @@ Identifica tus **fortalezas y debilidades** con evaluaciones adaptativas y prác
         
         # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
         if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Bienvenido al modo **SIMULEMOS UN EXAMEN**! ⏱️
-
-Práctica completa del examen PMP en **condiciones que replican el examen real** con cronómetro, navegación realista y análisis post-examen.
-
-## 🎯 **Tipos de Simulacro:**
-
-### **📋 Examen Completo:**
-• **180 preguntas** - Duración real 230 minutos (3h 50min)
-
-• **Distribución oficial** - People (42%), Process (50%), Business Environment (8%)
-
-• **Break opcional** - 10 minutos en la mitad (como examen real)
-
-• **Ambiente controlado** - Sin pausas, cronómetro visible
-
-### **⏰ Simulacro por Tiempo:**
-• **30 minutos** - 23 preguntas (práctica rápida)
-
-• **60 minutos** - 47 preguntas (sesión media)
-
-• **90 minutos** - 70 preguntas (práctica extendida)
-
-• **Útil** cuando no tienes tiempo completo
-
-### **🎯 Simulacro por Dominio:**
-• **Solo People** - 76 preguntas, tiempo proporcional
-
-• **Solo Process** - 90 preguntas, tiempo proporcional  
-
-• **Solo Business Environment** - 14 preguntas, tiempo proporcional
-
-## ✨ **Características Durante el Examen:**
-
-⏱️ **Timer prominente** - Cuenta regresiva siempre visible
-
-🗺️ **Question navigator** - Overview de progreso, preguntas marcadas
-
-📌 **Mark for review** - Sistema de marcado como examen real
-
-🚫 **No feedback** - Sin respuestas correctas hasta terminar
-
-💾 **Auto-save** - Guarda progreso automáticamente
-
-## 📊 **Post-Examen Analysis:**
-
-📈 **Score breakdown** - Por dominio y área de conocimiento
-
-⏰ **Time analysis** - Tiempo por pregunta, identificar ritmo
-
-🔍 **Question review** - Revisar todas las preguntas con explicaciones
-
-🎯 **Weak areas identification** - Qué estudiar antes del siguiente simulacro
-
-✅ **Readiness assessment** - Predicción de probabilidad de aprobar examen real
-
-**¿Qué tipo de simulacro prefieres?**
-
-• *"Examen completo"* - 180 preguntas, 230 minutos
-
-• *"Simulacro 60 minutos"* - Práctica de tiempo limitado
-
-• *"Solo Process Domain"* - Focus en área específica"""
+            welcome_message = """¡Bienvenido al modo **SIMULEMOS UN EXAMEN**! ⏱️\n\nPráctica completa del examen PMP en **condiciones que replican el examen real** con cronómetro, navegación realista y análisis posterior.\n\n## 🎯 **Tipos de Simulacro:**\n\n### **📋 Examen Completo:**\n• 180 preguntas - Duración real 230 minutos (3h 50min)\n• Distribución oficial: Personas (42%), Procesos (50%), Entorno de Negocio (8%)\n• Pausa opcional de 10 minutos en la mitad\n• Ambiente controlado, sin pausas, cronómetro visible\n\n### **⏰ Simulacro por Tiempo:**\n• 30 minutos - 23 preguntas (práctica rápida)\n• 60 minutos - 47 preguntas (sesión media)\n• 90 minutos - 70 preguntas (práctica extendida)\n• Útil cuando no tienes tiempo completo\n\n### **🎯 Simulacro por Dominio:**\n• Solo Personas - 76 preguntas, tiempo proporcional\n• Solo Procesos - 90 preguntas, tiempo proporcional\n• Solo Entorno de Negocio - 14 preguntas, tiempo proporcional\n\n## ✨ **Características Durante el Examen:**\n\n⏱️ Cronómetro siempre visible\n🗺️ Navegador de preguntas\n📌 Marcado para revisión\n🚫 Sin feedback hasta terminar\n💾 Guardado automático\n\n## 📊 **Análisis Posterior:**\n\n📈 Resultados por dominio y área\n⏰ Análisis de tiempo por pregunta\n🔍 Revisión de todas las preguntas\n🎯 Identificación de áreas a reforzar\n✅ Predicción de preparación para el examen real\n\n**¿Qué tipo de simulacro prefieres?**\n• "Examen completo"\n• "Simulacro 60 minutos"\n• "Solo Procesos"""
             
             welcome_widget = create_chat_message(welcome_message, False)
             self.chat_container.controls.append(welcome_widget)
@@ -1892,15 +1637,16 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
                 ft.Text("Temas", weight=ft.FontWeight.BOLD)
             ], spacing=8))
             for s in evaluations['sessions_detail']:
-                eval_table.append(ft.Row([
-                    ft.Text(fecha_es(s.get('date', '-')), width=80),
-                    ft.Text(str(s.get('duration_minutes', '-')), width=90),
-                    ft.Text(str(s.get('questions_attempted', '-')), width=80),
-                    ft.Text(str(s.get('correct_answers', '-')), width=80),
-                    ft.Text(str(s.get('incorrect_answers', '-')), width=90),
-                    ft.Text(f"{s.get('accuracy_percent', 0)}%", width=80),
-                    ft.Text(", ".join(s.get('topics_covered', [])), width=180)
-                ], spacing=8))
+                if s.get('questions_attempted', 0) > 0:
+                    eval_table.append(ft.Row([
+                        ft.Text(fecha_es(s.get('date', '-')), width=80),
+                        ft.Text(str(s.get('duration_minutes', '-')), width=90),
+                        ft.Text(str(s.get('questions_attempted', '-')), width=80),
+                        ft.Text(str(s.get('correct_answers', '-')), width=80),
+                        ft.Text(str(s.get('incorrect_answers', '-')), width=90),
+                        ft.Text(f"{s.get('accuracy_percent', 0)}%", width=80),
+                        ft.Text(", ".join(s.get('topics_covered', [])), width=180)
+                    ], spacing=8))
             eval_section.append(ft.Column(eval_table, spacing=2))
         else:
             eval_section.append(ft.Text("No hay evaluaciones registradas.", color=ft.Colors.GREY_600))
@@ -2061,13 +1807,23 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         Construye el layout principal con sidebar integrado (modos + conversaciones) y área de chat.
         """
         # Área de chat principal
+        chat_area_controls = []
+        # Mostrar cronómetro solo en modos simulemos/evaluemos
+        if self.cronometro_visible:
+            chat_area_controls.append(
+                ft.Container(
+                    content=self.cronometro_text,
+                    padding=ft.padding.only(bottom=10)
+                )
+            )
+        chat_area_controls.append(self.chat_container)
         chat_area = ft.Container(
-            content=self.chat_container,
+            content=ft.Column(chat_area_controls, spacing=0),
             padding=ft.padding.all(20),
             expand=True,
             bgcolor=ft.Colors.WHITE,
-            width=None,  # Se ajusta al contenedor padre
-            height=None  # Se ajusta al contenido
+            width=None,
+            height=None
         )
         
         # Área de entrada de mensajes (siempre visible, excepto cuando se muestra el perfil)
@@ -2979,6 +2735,31 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
             if self.current_mode:
                 default_progress[self.current_mode]["status"] = "active"
             return default_progress
+
+    def start_cronometro(self):
+        self.cronometro_segundos = 0
+        self.cronometro_visible = True
+        self._cronometro_running = True
+        def run():
+            import time
+            while self._cronometro_running:
+                mins = self.cronometro_segundos // 60
+                secs = self.cronometro_segundos % 60
+                self.cronometro_text.value = f"⏱️ Tiempo de sesión: {mins:02d}:{secs:02d}"
+                if self.page:
+                    self.page.update()
+                time.sleep(1)
+                self.cronometro_segundos += 1
+        import threading
+        self._cronometro_thread = threading.Thread(target=run, daemon=True)
+        self._cronometro_thread.start()
+
+    def stop_cronometro(self):
+        self.cronometro_visible = False
+        self._cronometro_running = False
+        self.cronometro_text.value = ""
+        if self.page:
+            self.page.update()
 
 def create_app(user: User):
     """

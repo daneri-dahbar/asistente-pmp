@@ -99,6 +99,7 @@ class DatabaseManager:
     """
     Gestiona la conexión y operaciones con la base de datos.
     """
+    Base = Base
     
     def __init__(self, database_url: str = "sqlite:///chat_history.db"):
         self.engine = create_engine(database_url, echo=False)
@@ -190,6 +191,8 @@ class DatabaseManager:
                 session.last_used_at = get_local_datetime()
             
             db.commit()
+            db.refresh(message)
+            return message
     
     def get_session_messages(self, session_id: int) -> list:
         """Obtiene todos los mensajes de una sesión específica"""
