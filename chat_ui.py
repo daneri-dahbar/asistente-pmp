@@ -2114,80 +2114,80 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         
         # Sidebar integrado (modos + conversaciones)
         if self.sidebar_visible:
+            sidebar_controls = [
+                # Header del sidebar
+                ft.Container(
+                    content=ft.Row(
+                        controls=[
+                            ft.Text(
+                                "🎯 PMP Assistant",
+                                size=16,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.WHITE
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER
+                    ),
+                    padding=ft.padding.all(15),
+                    bgcolor=ft.Colors.BLUE_800
+                ),
+                # Sección de Modos
+                ft.Container(
+                    content=ft.Column(
+                        controls=[
+                            ft.Text(
+                                "MODOS",
+                                size=12,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.BLUE_800
+                            ),
+                            self.create_navigation_menu()
+                        ],
+                        spacing=10
+                    ),
+                    padding=ft.padding.all(15),
+                    bgcolor=ft.Colors.BLUE_50
+                ),
+                ft.Divider(height=1, color=ft.Colors.BLUE_200)
+            ]
+            # Solo mostrar la sección de conversaciones si el modo no es 'analicemos'
+            if self.current_mode != "analicemos":
+                sidebar_controls.append(
+                    ft.Container(
+                        content=ft.Column(
+                            controls=[
+                                ft.Row(
+                                    controls=[
+                                        ft.Text(
+                                            "CONVERSACIONES",
+                                            size=12,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=ft.Colors.BLUE_700
+                                        ),
+                                        ft.IconButton(
+                                            icon=ft.Icons.ADD,
+                                            tooltip="Nueva conversación",
+                                            icon_color=ft.Colors.BLUE_700,
+                                            icon_size=16,
+                                            on_click=self.new_conversation
+                                        )
+                                    ],
+                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                                ),
+                                ft.Container(
+                                    content=self.conversations_list,
+                                    expand=True
+                                )
+                            ],
+                            spacing=5
+                        ),
+                        padding=ft.padding.all(15),
+                        expand=True
+                    )
+                )
             integrated_sidebar = ft.Container(
                 content=ft.Column(
-                    controls=[
-                        # Header del sidebar
-                        ft.Container(
-                            content=ft.Row(
-                                controls=[
-                                    ft.Text(
-                                        "🎯 PMP Assistant",
-                                        size=16,
-                                        weight=ft.FontWeight.BOLD,
-                                        color=ft.Colors.WHITE
-                                    )
-                                ],
-                                alignment=ft.MainAxisAlignment.CENTER
-                            ),
-                            padding=ft.padding.all(15),
-                            bgcolor=ft.Colors.BLUE_800
-                        ),
-                        
-                        # Sección de Modos
-                        ft.Container(
-                            content=ft.Column(
-                                controls=[
-                                    ft.Text(
-                                        "MODOS",
-                                        size=12,
-                                        weight=ft.FontWeight.BOLD,
-                                        color=ft.Colors.BLUE_800
-                                    ),
-                                    self.create_navigation_menu()
-                                ],
-                                spacing=10
-                            ),
-                            padding=ft.padding.all(15),
-                            bgcolor=ft.Colors.BLUE_50
-                        ),
-                        
-                        # Divider entre secciones
-                        ft.Divider(height=1, color=ft.Colors.BLUE_200),
-                        
-                        # Sección de Conversaciones
-                        ft.Container(
-                            content=ft.Column(
-                                controls=[
-                                    ft.Row(
-                                        controls=[
-                                            ft.Text(
-                                                "CONVERSACIONES",
-                                                size=12,
-                                                weight=ft.FontWeight.BOLD,
-                                                color=ft.Colors.BLUE_700
-                                            ),
-                                            ft.IconButton(
-                                                icon=ft.Icons.ADD,
-                                                tooltip="Nueva conversación",
-                                                icon_color=ft.Colors.BLUE_700,
-                                                icon_size=16,
-                                                on_click=self.new_conversation
-                                            )
-                                        ],
-                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                                    ),
-                                    ft.Container(
-                                        content=self.conversations_list,
-                                        expand=True
-                                    )
-                                ],
-                                spacing=5
-                            ),
-                            padding=ft.padding.all(15),
-                            expand=True
-                        )
-                    ],
+                    controls=sidebar_controls,
                     spacing=0
                 ),
                 width=320,
