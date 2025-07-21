@@ -1730,6 +1730,26 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         """
         Actualiza la interfaz para el modo ANALICEMOS CÓMO VAMOS.
         """
+        # Utilidad para traducción de días y formato de fecha
+        dias_es = {
+            "Monday": "Lunes",
+            "Tuesday": "Martes",
+            "Wednesday": "Miércoles",
+            "Thursday": "Jueves",
+            "Friday": "Viernes",
+            "Saturday": "Sábado",
+            "Sunday": "Domingo"
+        }
+        def fecha_es(date_str):
+            # Convierte yyyy-MM-dd a dd/MM/aaaa solo si es una fecha
+            try:
+                if isinstance(date_str, str) and '-' in date_str:
+                    from datetime import datetime
+                    return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d/%m/%Y")
+                return date_str
+            except:
+                return date_str
+
         # Limpiar el contenedor principal
         self.chat_container.controls.clear()
 
@@ -1835,14 +1855,14 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         if progress_trends.get('has_data'):
             trends_section.append(ft.Text("Tendencia de sesiones en el tiempo", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800))
             trends_section.append(
-                ft.Text(f"Primera sesión: {progress_trends.get('first_session_date', '-')}")
+                ft.Text(f"Primera sesión: {self.format_date(progress_trends.get('first_session_date', '-'))}")
             )
             trends_section.append(
-                ft.Text(f"Última sesión: {progress_trends.get('latest_session_date', '-')}")
+                ft.Text(f"Última sesión: {self.format_date(progress_trends.get('latest_session_date', '-'))}")
             )
             freq = progress_trends.get('session_frequency', {})
             if freq:
-                trends_section.append(ft.Text(f"Sesiones por semana: {freq.get('sessions_per_week', '-')} ({freq.get('frequency_category', '-')})"))
+                trends_section.append(ft.Text(f"Sesiones por semana: {freq.get('sessions_per_week', '-')} ({freq.get('frequency_category', '-').replace('muy_alta','muy alta').replace('alta','alta').replace('moderada','moderada').replace('baja','baja')})"))
         else:
             trends_section.append(ft.Text("No hay suficientes datos para mostrar tendencias.", color=ft.Colors.GREY_600))
 
@@ -1866,14 +1886,20 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
                 ft.Text("Fecha", width=80, weight=ft.FontWeight.BOLD),
                 ft.Text("Duración (min)", width=90, weight=ft.FontWeight.BOLD),
                 ft.Text("Preguntas", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Correctas", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Incorrectas", width=90, weight=ft.FontWeight.BOLD),
+                ft.Text("% Acierto", width=80, weight=ft.FontWeight.BOLD),
                 ft.Text("Temas", weight=ft.FontWeight.BOLD)
             ], spacing=8))
             for s in evaluations['sessions_detail']:
                 eval_table.append(ft.Row([
-                    ft.Text(s.get('date', '-'), width=80),
+                    ft.Text(fecha_es(s.get('date', '-')), width=80),
                     ft.Text(str(s.get('duration_minutes', '-')), width=90),
                     ft.Text(str(s.get('questions_attempted', '-')), width=80),
-                    ft.Text(", ".join(s.get('topics_covered', [])), max_lines=1, width=180, overflow=ft.TextOverflow.ELLIPSIS)
+                    ft.Text(str(s.get('correct_answers', '-')), width=80),
+                    ft.Text(str(s.get('incorrect_answers', '-')), width=90),
+                    ft.Text(f"{s.get('accuracy_percent', 0)}%", width=80),
+                    ft.Text(", ".join(s.get('topics_covered', [])), width=180)
                 ], spacing=8))
             eval_section.append(ft.Column(eval_table, spacing=2))
         else:
@@ -1892,10 +1918,10 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
             ], spacing=8))
             for s in simulations['sessions_detail']:
                 sim_table.append(ft.Row([
-                    ft.Text(s.get('date', '-'), width=80),
+                    ft.Text(self.format_date(s.get('date', '-')), width=80),
                     ft.Text(str(s.get('duration_minutes', '-')), width=90),
-                    ft.Text(s.get('exam_type', '-'), width=80),
-                    ft.Text(s.get('completion_status', '-'), width=80)
+                    ft.Text(s.get('exam_type', '-').replace('completo','Completo').replace('por_tiempo','Por tiempo').replace('por_dominio','Por dominio').replace('general','General'), width=80),
+                    ft.Text(s.get('completion_status', '-').replace('completado','Completado').replace('en_progreso','En progreso'), width=80)
                 ], spacing=8))
             sim_section.append(ft.Column(sim_table, spacing=2))
         else:
@@ -1925,8 +1951,10 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         study_patterns = analytics.get('study_patterns', {}) if analytics else {}
         horarios_section = [ft.Text("Mejores horarios y días de estudio", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)]
         if study_patterns.get('has_data'):
-            horarios_section.append(ft.Text(f"Mejor hora: {study_patterns.get('best_study_hour', '-')}h"))
-            horarios_section.append(ft.Text(f"Mejor día: {study_patterns.get('best_study_day', '-')}"))
+            best_hour = study_patterns.get('best_study_hour', '-')
+            best_day = dias_es.get(study_patterns.get('best_study_day', '-'), study_patterns.get('best_study_day', '-'))
+            horarios_section.append(ft.Text(f"Mejor hora: {best_hour}h"))
+            horarios_section.append(ft.Text(f"Mejor día: {best_day}"))
             # Tabla de distribución por hora
             hour_dist = study_patterns.get('hour_distribution', {})
             if hour_dist:
@@ -1943,12 +1971,13 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
             day_dist = study_patterns.get('day_distribution', {})
             if day_dist:
                 day_table = []
-                for d in ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]:
-                    if d in day_dist:
+                for d_en in ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]:
+                    if d_en in day_dist:
+                        d_es = dias_es.get(d_en, d_en)
                         day_table.append(ft.Row([
-                            ft.Text(d, width=80),
-                            ft.ProgressBar(value=day_dist[d]/max(day_dist.values()), width=120, color=ft.Colors.GREEN_400),
-                            ft.Text(str(day_dist[d]), width=32)
+                            ft.Text(d_es, width=80),
+                            ft.ProgressBar(value=day_dist[d_en]/max(day_dist.values()), width=120, color=ft.Colors.GREEN_400),
+                            ft.Text(str(day_dist[d_en]), width=32)
                         ], spacing=6))
                 horarios_section.append(ft.Text("Distribución por día:"))
                 horarios_section.append(ft.Column(day_table, spacing=2))

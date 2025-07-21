@@ -312,7 +312,20 @@ class DatabaseManager:
             messages = db.query(ChatMessage).filter(
                 ChatMessage.session_id == session.id
             ).order_by(ChatMessage.timestamp.asc()).all()
-            
+
+            # Contar respuestas correctas e incorrectas
+            correctas = 0
+            incorrectas = 0
+            for m in messages:
+                if m.role == 'assistant':
+                    content = m.content.lower()
+                    if 'correcto' in content:
+                        correctas += 1
+                    elif 'incorrecto' in content:
+                        incorrectas += 1
+            total_preguntas = correctas + incorrectas
+            porcentaje_acierto = int((correctas / total_preguntas) * 100) if total_preguntas > 0 else 0
+
             # Analizar contenido de mensajes para extraer datos de evaluación
             session_data = {
                 'session_id': session.id,
@@ -321,9 +334,12 @@ class DatabaseManager:
                 'duration_minutes': self._calculate_session_duration(messages),
                 'total_interactions': len([m for m in messages if m.role == 'user']),
                 'questions_attempted': self._count_questions_in_session(messages),
-                'topics_covered': self._extract_topics_from_messages(messages)
+                'topics_covered': self._extract_topics_from_messages(messages),
+                'correct_answers': correctas,
+                'incorrect_answers': incorrectas,
+                'accuracy_percent': porcentaje_acierto
             }
-            
+
             evaluation_stats['sessions_detail'].append(session_data)
         
         return evaluation_stats
@@ -359,14 +375,20 @@ class DatabaseManager:
         return simulation_stats
     
     def _calculate_session_duration(self, messages: list) -> int:
-        """Calcula la duración de una sesión en minutos"""
+        """Calcula la duración de una sesión en minutos, ignorando pausas largas (>10 min) entre mensajes."""
         if len(messages) < 2:
             return 0
-        
-        first_message = min(messages, key=lambda m: m.timestamp)
-        last_message = max(messages, key=lambda m: m.timestamp)
-        duration = last_message.timestamp - first_message.timestamp
-        return int(duration.total_seconds() / 60)
+        # Ordenar mensajes por timestamp
+        sorted_msgs = sorted(messages, key=lambda m: m.timestamp)
+        total_seconds = 0
+        timeout = 10 * 60  # 10 minutos en segundos
+        for i in range(1, len(sorted_msgs)):
+            delta = (sorted_msgs[i].timestamp - sorted_msgs[i-1].timestamp).total_seconds()
+            if delta <= timeout:
+                total_seconds += delta
+            else:
+                total_seconds += timeout  # Sumar solo el máximo permitido por pausa
+        return int(total_seconds // 60)
     
     def _count_questions_in_session(self, messages: list) -> int:
         """Cuenta aproximadamente cuántas preguntas se respondieron en la sesión"""
