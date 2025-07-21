@@ -1730,69 +1730,302 @@ Práctica completa del examen PMP en **condiciones que replican el examen real**
         """
         Actualiza la interfaz para el modo ANALICEMOS CÓMO VAMOS.
         """
-        # Actualizar el placeholder del input
-        self.message_input.hint_text = "Ejemplo: 'Mostrar mi progreso' o 'Análisis de preparación' o 'Dashboard completo'"
-        
-        # Actualizar el estado si no hay chatbot inicializado
-        if not self.chatbot:
-            self.status_text.value = "📊 Modo ANALICEMOS CÓMO VAMOS - Dashboard de progreso y análisis de preparación"
-            self.status_text.color = ft.Colors.BLUE_600
-        
-        # Si hay una conversación activa, mostrar mensaje de bienvenida para el modo
-        if self.chatbot and len(self.chat_container.controls) == 0:
-            welcome_message = """¡Bienvenido al modo **ANALICEMOS CÓMO VAMOS**! 📊
+        # Limpiar el contenedor principal
+        self.chat_container.controls.clear()
 
-**Análisis basado en datos reales** de tus sesiones de EVALUEMOS y SIMULEMOS. Obtengo insights de tu actividad real en la plataforma.
+        # Obtener datos reales del usuario
+        analytics = None
+        if self.chatbot and hasattr(self.chatbot, 'db_manager'):
+            try:
+                analytics = self.chatbot.db_manager.get_user_analytics_data(self.user.id)
+            except Exception as e:
+                analytics = None
+                print(f"Error obteniendo datos analíticos: {e}")
 
-## 📊 **Análisis Disponibles:**
+        # Valores por defecto si no hay datos
+        overview = analytics['overview'] if analytics and 'overview' in analytics else {}
+        total_sessions = overview.get('total_sessions', 0)
+        total_study_hours = overview.get('study_time_hours', 0)
+        streak_days = overview.get('study_streak_days', 0)
+        sessions_by_mode = overview.get('sessions_by_mode', {
+            'charlemos': 0,
+            'estudiemos': 0,
+            'evaluemos': 0,
+            'simulemos': 0
+        })
 
-### 📈 **Dashboard General**
-- **Resumen de actividad** - Sesiones totales, tiempo de estudio, racha de días
-- **Distribución por modo** - Cuánto usas cada modo (CHARLEMOS, ESTUDIEMOS, EVALUEMOS, SIMULEMOS)
-- **Progreso temporal** - Evolución de tu actividad en el tiempo
+        # Tarjetas resumen
+        summary_cards = ft.Row([
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Sesiones totales", size=12, color=ft.Colors.GREY_700),
+                    ft.Text(str(total_sessions), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700)
+                ], spacing=2),
+                padding=ft.padding.all(16),
+                bgcolor=ft.Colors.BLUE_50,
+                border_radius=8,
+                expand=True
+            ),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Horas de estudio", size=12, color=ft.Colors.GREY_700),
+                    ft.Text(str(total_study_hours), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700)
+                ], spacing=2),
+                padding=ft.padding.all(16),
+                bgcolor=ft.Colors.GREEN_50,
+                border_radius=8,
+                expand=True
+            ),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Racha de días", size=12, color=ft.Colors.GREY_700),
+                    ft.Text(str(streak_days), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700)
+                ], spacing=2),
+                padding=ft.padding.all(16),
+                bgcolor=ft.Colors.ORANGE_50,
+                border_radius=8,
+                expand=True
+            )
+        ], spacing=16)
 
-### 🎯 **Análisis de Evaluaciones**
-- **Sesiones de EVALUEMOS** - Detalle de cada sesión completada
-- **Temas cubiertos** - Áreas de conocimiento que has practicado
-- **Tiempo por sesión** - Duración y número de preguntas por sesión
-- **Patrones de práctica** - Frecuencia y consistencia en evaluaciones
+        # Tabla de distribución por modo
+        mode_labels = [
+            ("charlemos", "Charlemos", ft.Colors.BLUE_600),
+            ("estudiemos", "Estudiemos", ft.Colors.GREEN_600),
+            ("evaluemos", "Evaluemos", ft.Colors.ORANGE_600),
+            ("simulemos", "Simulemos", ft.Colors.PURPLE_600)
+        ]
+        max_sessions = max(sessions_by_mode.values()) if sessions_by_mode else 1
+        table_rows = []
+        for key, label, color in mode_labels:
+            count = sessions_by_mode.get(key, 0)
+            percent = int((count / max_sessions) * 100) if max_sessions > 0 else 0
+            table_rows.append(
+                ft.Row([
+                    ft.Text(label, size=14, width=120),
+                    ft.ProgressBar(value=count / max_sessions if max_sessions > 0 else 0, color=color, width=180, height=12),
+                    ft.Text(f"{count}", size=14, color=color, width=32)
+                ], spacing=10)
+            )
+        mode_table = ft.Column(table_rows, spacing=6)
 
-### 🏆 **Análisis de Simulacros**
-- **Sesiones de SIMULEMOS** - Historial de simulacros realizados
-- **Tipos de examen** - Completos, por tiempo, por dominio
-- **Estado de completitud** - Cuáles simulacros terminaste vs abandonaste
-- **Progreso en simulacros** - Evolución en la práctica de exámenes
+        # Título del dashboard
+        dashboard_title = ft.Text("📊 Dashboard de Progreso y Actividad", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800)
 
-### 🔍 **Patrones de Estudio**
-- **Mejores horarios** - Cuándo estudias más efectivamente
-- **Días preferidos** - Qué días de la semana eres más activo
-- **Modo favorito** - Cuál modo usas más frecuentemente
-- **Consistencia** - Regularidad en tus sesiones de estudio
+        # Mensaje si no hay datos
+        no_data_msg = ft.Text("No hay datos suficientes para mostrar el dashboard. Realiza sesiones en los diferentes modos para ver tu progreso.", color=ft.Colors.GREY_600, size=16, italic=True) if total_sessions == 0 else None
 
-### 📈 **Tendencias y Predicciones**
-- **Frecuencia de estudio** - Sesiones por semana y tendencias
-- **Engagement** - Si tu participación está mejorando o declinando
-- **Recomendaciones** - Sugerencias basadas en tus datos reales
+        # Gráfico circular: Proporción de actividad por modo
+        pie_chart = ft.PieChart(
+            sections=[
+                ft.PieChartSection(value=sessions_by_mode.get("charlemos", 0), color=ft.Colors.BLUE_600, title="Charlemos"),
+                ft.PieChartSection(value=sessions_by_mode.get("estudiemos", 0), color=ft.Colors.GREEN_600, title="Estudiemos"),
+                ft.PieChartSection(value=sessions_by_mode.get("evaluemos", 0), color=ft.Colors.ORANGE_600, title="Evaluemos"),
+                ft.PieChartSection(value=sessions_by_mode.get("simulemos", 0), color=ft.Colors.PURPLE_600, title="Simulemos")
+            ],
+            sections_space=2,
+            center_space_radius=40,
+            height=220,
+            width=220
+        )
 
-## ⚠️ **Importante:**
-Solo analizo datos que **realmente existen** en tu historial. Si no tienes suficientes sesiones de EVALUEMOS o SIMULEMOS, te lo indicaré claramente.
+        # --- 1. Tendencia de sesiones en el tiempo ---
+        progress_trends = analytics.get('progress_trends', {}) if analytics else {}
+        trends_section = []
+        if progress_trends.get('has_data'):
+            trends_section.append(ft.Text("Tendencia de sesiones en el tiempo", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800))
+            trends_section.append(
+                ft.Text(f"Primera sesión: {progress_trends.get('first_session_date', '-')}")
+            )
+            trends_section.append(
+                ft.Text(f"Última sesión: {progress_trends.get('latest_session_date', '-')}")
+            )
+            freq = progress_trends.get('session_frequency', {})
+            if freq:
+                trends_section.append(ft.Text(f"Sesiones por semana: {freq.get('sessions_per_week', '-')} ({freq.get('frequency_category', '-')})"))
+        else:
+            trends_section.append(ft.Text("No hay suficientes datos para mostrar tendencias.", color=ft.Colors.GREY_600))
 
-**¿Qué análisis te gustaría ver?**
+        # --- 2. Progreso hacia el objetivo de estudio ---
+        user_profile = analytics.get('user_profile', {}) if analytics else {}
+        objetivo_diario = user_profile.get('study_hours_daily', 2) or 2
+        objetivo_semanal = objetivo_diario * 7
+        progreso = min(total_study_hours / objetivo_semanal, 1.0) if objetivo_semanal > 0 else 0
+        progreso_section = ft.Column([
+            ft.Text("Progreso hacia tu objetivo semanal de estudio", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+            ft.ProgressBar(value=progreso, width=320, color=ft.Colors.BLUE_600),
+            ft.Text(f"{total_study_hours}h / {objetivo_semanal}h esta semana", size=14)
+        ], spacing=6)
 
-• *"Mostrar mi dashboard completo"* - Resumen general de toda tu actividad
+        # --- 3. Rendimiento en evaluaciones ---
+        evaluations = analytics.get('evaluations', {}) if analytics else {}
+        eval_section = [ft.Text("Rendimiento en evaluaciones (EVALUEMOS)", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)]
+        if evaluations.get('has_data') and evaluations.get('sessions_detail'):
+            eval_table = []
+            eval_table.append(ft.Row([
+                ft.Text("Fecha", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Duración (min)", width=90, weight=ft.FontWeight.BOLD),
+                ft.Text("Preguntas", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Temas", weight=ft.FontWeight.BOLD)
+            ], spacing=8))
+            for s in evaluations['sessions_detail']:
+                eval_table.append(ft.Row([
+                    ft.Text(s.get('date', '-'), width=80),
+                    ft.Text(str(s.get('duration_minutes', '-')), width=90),
+                    ft.Text(str(s.get('questions_attempted', '-')), width=80),
+                    ft.Text(", ".join(s.get('topics_covered', [])), max_lines=1, width=180, overflow=ft.TextOverflow.ELLIPSIS)
+                ], spacing=8))
+            eval_section.append(ft.Column(eval_table, spacing=2))
+        else:
+            eval_section.append(ft.Text("No hay evaluaciones registradas.", color=ft.Colors.GREY_600))
 
-• *"Analizar mis evaluaciones"* - Focus en sesiones de EVALUEMOS
+        # --- 4. Historial de simulacros ---
+        simulations = analytics.get('simulations', {}) if analytics else {}
+        sim_section = [ft.Text("Historial de simulacros (SIMULEMOS)", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)]
+        if simulations.get('has_data') and simulations.get('sessions_detail'):
+            sim_table = []
+            sim_table.append(ft.Row([
+                ft.Text("Fecha", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Duración (min)", width=90, weight=ft.FontWeight.BOLD),
+                ft.Text("Tipo", width=80, weight=ft.FontWeight.BOLD),
+                ft.Text("Estado", width=80, weight=ft.FontWeight.BOLD)
+            ], spacing=8))
+            for s in simulations['sessions_detail']:
+                sim_table.append(ft.Row([
+                    ft.Text(s.get('date', '-'), width=80),
+                    ft.Text(str(s.get('duration_minutes', '-')), width=90),
+                    ft.Text(s.get('exam_type', '-'), width=80),
+                    ft.Text(s.get('completion_status', '-'), width=80)
+                ], spacing=8))
+            sim_section.append(ft.Column(sim_table, spacing=2))
+        else:
+            sim_section.append(ft.Text("No hay simulacros registrados.", color=ft.Colors.GREY_600))
 
-• *"Revisar mis simulacros"* - Análisis de sesiones de SIMULEMOS
+        # --- 5. Temas más estudiados y menos practicados ---
+        temas_counter = {}
+        if evaluations.get('sessions_detail'):
+            for s in evaluations['sessions_detail']:
+                for t in s.get('topics_covered', []):
+                    temas_counter[t] = temas_counter.get(t, 0) + 1
+        temas_ranking = sorted(temas_counter.items(), key=lambda x: x[1], reverse=True)
+        temas_section = [ft.Text("Ranking de temas más estudiados", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)]
+        if temas_ranking:
+            for tema, count in temas_ranking[:5]:
+                temas_section.append(ft.Text(f"{tema}: {count} sesiones"))
+        else:
+            temas_section.append(ft.Text("No hay temas registrados.", color=ft.Colors.GREY_600))
 
-• *"Patrones de estudio"* - Cuándo y cómo estudias mejor
+        # --- 6. Consistencia y rachas ---
+        racha_section = ft.Column([
+            ft.Text("Consistencia y racha de estudio", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+            ft.Text(f"Racha actual: {streak_days} días")
+        ], spacing=4)
 
-• *"Tendencias de progreso"* - Evolución temporal de tu preparación
+        # --- 7. Mejores horarios y días de estudio ---
+        study_patterns = analytics.get('study_patterns', {}) if analytics else {}
+        horarios_section = [ft.Text("Mejores horarios y días de estudio", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)]
+        if study_patterns.get('has_data'):
+            horarios_section.append(ft.Text(f"Mejor hora: {study_patterns.get('best_study_hour', '-')}h"))
+            horarios_section.append(ft.Text(f"Mejor día: {study_patterns.get('best_study_day', '-')}"))
+            # Tabla de distribución por hora
+            hour_dist = study_patterns.get('hour_distribution', {})
+            if hour_dist:
+                hour_table = []
+                for h in sorted(hour_dist.keys()):
+                    hour_table.append(ft.Row([
+                        ft.Text(f"{h:02d}:00", width=60),
+                        ft.ProgressBar(value=hour_dist[h]/max(hour_dist.values()), width=120, color=ft.Colors.BLUE_400),
+                        ft.Text(str(hour_dist[h]), width=32)
+                    ], spacing=6))
+                horarios_section.append(ft.Text("Distribución por hora:"))
+                horarios_section.append(ft.Column(hour_table, spacing=2))
+            # Tabla de distribución por día
+            day_dist = study_patterns.get('day_distribution', {})
+            if day_dist:
+                day_table = []
+                for d in ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]:
+                    if d in day_dist:
+                        day_table.append(ft.Row([
+                            ft.Text(d, width=80),
+                            ft.ProgressBar(value=day_dist[d]/max(day_dist.values()), width=120, color=ft.Colors.GREEN_400),
+                            ft.Text(str(day_dist[d]), width=32)
+                        ], spacing=6))
+                horarios_section.append(ft.Text("Distribución por día:"))
+                horarios_section.append(ft.Column(day_table, spacing=2))
+        else:
+            horarios_section.append(ft.Text("No hay suficientes datos para analizar horarios.", color=ft.Colors.GREY_600))
 
-• *"Recomendaciones personalizadas"* - Sugerencias basadas en tus datos"""
-            
-            welcome_widget = create_chat_message(welcome_message, False)
-            self.chat_container.controls.append(welcome_widget)
+        # --- 8. Recomendaciones personalizadas ---
+        recomendaciones = []
+        if total_sessions == 0:
+            recomendaciones.append("¡Comienza tu primera sesión para ver recomendaciones!")
+        else:
+            if progreso < 0.5:
+                recomendaciones.append("Te recomendamos aumentar tus horas de estudio esta semana para alcanzar tu objetivo.")
+            if temas_ranking:
+                menos_practicado = temas_ranking[-1][0]
+                recomendaciones.append(f"Dedica más tiempo a repasar el tema: {menos_practicado}.")
+            if streak_days < 3:
+                recomendaciones.append("Intenta mantener una racha de al menos 3 días seguidos de estudio.")
+            if study_patterns.get('preferred_mode') and study_patterns['preferred_mode'] != 'evaluemos':
+                recomendaciones.append("Te sugerimos realizar más evaluaciones para medir tu progreso.")
+        recomendaciones_section = ft.Column([
+            ft.Text("Recomendaciones personalizadas", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800)
+        ] + [ft.Text(f"• {r}") for r in recomendaciones], spacing=2)
+
+        # --- 9. Comparativa con la comunidad (placeholder) ---
+        comparativa_section = ft.Column([
+            ft.Text("Comparativa con la comunidad", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+            ft.Text("Funcionalidad próximamente disponible. ¡Pronto podrás comparar tu progreso con otros usuarios!", color=ft.Colors.GREY_600)
+        ], spacing=2)
+
+        # --- 10. Exportar o compartir progreso (placeholder) ---
+        exportar_section = ft.Row([
+            ft.ElevatedButton("Exportar dashboard (próximamente)", icon=ft.Icons.DOWNLOAD)
+        ], alignment=ft.MainAxisAlignment.END)
+
+        # --- Agregar todo al contenedor principal ---
+        self.chat_container.controls = [
+            dashboard_title,
+            ft.Divider(height=16),
+            summary_cards,
+            ft.Divider(height=24),
+            ft.Text("Distribución de sesiones por modo", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+            mode_table,
+            ft.Divider(height=24),
+            ft.Text("Proporción de actividad por modo", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+            pie_chart,
+            ft.Divider(height=24),
+            *trends_section,
+            ft.Divider(height=24),
+            progreso_section,
+            ft.Divider(height=24),
+            *eval_section,
+            ft.Divider(height=24),
+            *sim_section,
+            ft.Divider(height=24),
+            *temas_section,
+            ft.Divider(height=24),
+            racha_section,
+            ft.Divider(height=24),
+            *horarios_section,
+            ft.Divider(height=24),
+            recomendaciones_section,
+            ft.Divider(height=24),
+            comparativa_section,
+            ft.Divider(height=24),
+            exportar_section
+        ]
+        if no_data_msg:
+            self.chat_container.controls.append(ft.Divider(height=16))
+            self.chat_container.controls.append(no_data_msg)
+
+        # Ocultar el input de mensajes en modo dashboard
+        self.message_input.visible = False
+        self.send_button.visible = False
+
+        if self.page:
+            self.page.update()
     
     def build_layout(self):
         """
